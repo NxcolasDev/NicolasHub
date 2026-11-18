@@ -1,0 +1,154 @@
+{
+  "badges": [
+    {
+      "title": "AWS Academy Graduate · Cloud Foundations",
+      "collection": "AWS Academy",
+      "kind": "image",
+      "path": "/assets/badges/aws-academy-graduate-cloud-foundations-training-badge.png"
+    },
+    {
+      "title": "AWS Academy Graduate · Cloud Architecting",
+      "collection": "AWS Academy",
+      "kind": "image",
+      "path": "/assets/badges/aws-academy-graduate-cloud-architecting-training-ba.png"
+    },
+    {
+      "title": "Google Cloud · Credencial",
+      "collection": "Google Cloud",
+      "kind": "image",
+      "path": "/assets/badges/gcp-certificate.jpeg"
+    },
+    {
+      "title": "Google Cloud Computing Foundations · 1",
+      "collection": "Google Cloud",
+      "kind": "pdf",
+      "path": "/assets/badges/t-gccf1-b-m3-l14-en-file-32-en.pdf"
+    },
+    {
+      "title": "Google Cloud Computing Foundations · 2",
+      "collection": "Google Cloud",
+      "kind": "pdf",
+      "path": "/assets/badges/t-gccf2-b-m6-l10-en-file-32-en.pdf"
+    },
+    {
+      "title": "Google Cloud Computing Foundations · 3",
+      "collection": "Google Cloud",
+      "kind": "pdf",
+      "path": "/assets/badges/t-gccf3-b-m8-l8-en-file-21-en.pdf"
+    },
+    {
+      "title": "Google Cloud Computing Foundations · 4",
+      "collection": "Google Cloud",
+      "kind": "pdf",
+      "path": "/assets/badges/t-gccf4-b-m11-l1-en-file-22-en.pdf"
+    }
+  ],
+  "eventos": [
+    {
+      "title": "Registro do apagão na dinâmica Kiro",
+      "collection": "Kiro",
+      "kind": "image",
+      "path": "/assets/eventos/apagao-kiro.jpeg"
+    },
+    {
+      "title": "AWS Student Data · Registro 1",
+      "collection": "AWS Student Data",
+      "kind": "image",
+      "path": "/assets/eventos/aws-student-day-pt1.jpeg"
+    },
+    {
+      "title": "AWS Student Data · Registro 2",
+      "collection": "AWS Student Data",
+      "kind": "image",
+      "path": "/assets/eventos/aws-student-day-pt2.jpeg"
+    },
+    {
+      "title": "AWS Student Data · Registro 3",
+      "collection": "AWS Student Data",
+      "kind": "image",
+      "path": "/assets/eventos/aws-student-day-pt3.jpeg"
+    },
+    {
+      "title": "AWS Student Data · Evento",
+      "collection": "AWS Student Data",
+      "kind": "image",
+      "path": "/assets/eventos/aws-student-day.jpeg"
+    },
+    {
+      "title": "Chaveiro Git do evento Kiro",
+      "collection": "Kiro",
+      "kind": "image",
+      "path": "/assets/eventos/chaveiro-git-kiro.jpeg"
+    },
+    {
+      "title": "Registro da dinâmica Kiro",
+      "collection": "Kiro",
+      "kind": "image",
+      "path": "/assets/eventos/kiro-bonequinho.jpeg"
+    }
+  ],
+  "arquitetura": [
+    {
+      "title": "Arquitetura VPC",
+      "collection": "Redes e Cloud",
+      "kind": "image",
+      "path": "/assets/arquitetura/vpc-architecture.png"
+    }
+  ],
+  "certificados": [
+    {
+      "title": "AWS Academy Graduate · Cloud Architecting (PDF)",
+      "collection": "AWS Academy",
+      "kind": "pdf",
+      "path": "/assets/certificados/aws-academy-graduate-cloud-architecting-training-badge-badge20260926-21-nx596q.pdf"
+    },
+    {
+      "title": "AWS Academy Graduate · Cloud Foundations (PDF)",
+      "collection": "AWS Academy",
+      "kind": "pdf",
+      "path": "/assets/certificados/aws-academy-graduate-cloud-foundations-training-badge-badge20261009-20-c7fck1.pdf"
+    },
+    {
+      "title": "Comunicação Empresarial",
+      "collection": null,
+      "kind": "pdf",
+      "path": "/assets/certificados/certificado-comunicacao-empresarial.pdf"
+    },
+    {
+      "title": "Projeto com Interface Gráfica",
+      "collection": null,
+      "kind": "pdf",
+      "path": "/assets/certificados/certificado-criando-um-projeto-com-interface-grafica.pdf"
+    },
+    {
+      "title": "Excel",
+      "collection": null,
+      "kind": "pdf",
+      "path": "/assets/certificados/certificado-excel.pdf"
+    },
+    {
+      "title": "Python Basics",
+      "collection": null,
+      "kind": "pdf",
+      "path": "/assets/certificados/certificado-python-basics.pdf"
+    },
+    {
+      "title": "Python · Programação Orientada a Objetos",
+      "collection": null,
+      "kind": "pdf",
+      "path": "/assets/certificados/certificado-python-poo.pdf"
+    },
+    {
+      "title": "Certificado · Título a identificar",
+      "collection": null,
+      "kind": "pdf",
+      "path": "/assets/certificados/d9be6f3b-412b-4561-85a4-a54e44fc43d5.pdf"
+    },
+    {
+      "title": "Lógica em Python",
+      "collection": null,
+      "kind": "pdf",
+      "path": "/assets/certificados/logica-em-python.pdf"
+    }
+  ]
+}
