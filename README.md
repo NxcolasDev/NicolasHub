@@ -1,6 +1,7 @@
 <div align="center">
+
 <h1>Nicolas Hub</h1>
-<p>Ecossistema de aprendizagem interativa para Python, Cloud, dados, Terraform e DevOps.</p>
+<p>Portfólio, academia cloud e preparação de carreira de Nicolas de Jesus Silva.</p>
 
 [![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-API-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
@@ -11,20 +12,24 @@
 
 ## Visão geral
 
-O Nicolas Hub combina CLI, API de aprendizagem, analytics e um assistente de
-IA opcional. A trilha abrange fundamentos e engenharia Python, cloud AWS/GCP,
-bancos SQL/NoSQL, Terraform e DevOps. Eventos são persistidos no PostgreSQL e
-podem ser publicados em SQS. O assistente usa um adapter configurável por
-ambiente e funciona sem acoplar domínio ou rotas a um fornecedor.
+O Nicolas Hub reúne a vitrine de projetos e credenciais, a academia de Cloud e
+Dados, a revisão para provas e o painel da Job Fair Google Cloud de 02/12/2026.
+O treino de lógica e os simulados iniciais funcionam sem Gemini. Com uma conta,
+o Gemini gera resumos, flashcards, simulados com feedback por alternativa e
+uma análise de vaga. O currículo é renderizado em HTML com os dados do perfil
+mestre e pode ser salvo em PDF pela impressão do navegador.
 
 ## Arquitetura
 
+O desenho AWS + GCP, as permissões e a ordem para provisionar os recursos
+estão no [guia de arquitetura multicloud](docs/arquitetura-multicloud.md).
+
 ```text
-[Cliente / Swagger UI] --REST--> [FastAPI: JWT + Analytics]
+[React/Vite / Swagger] --REST--> [FastAPI: JWT, academia, carreira e analytics]
 [CLI Python src/] -------------> [Motor de lógica]
-[FastAPI] ----------------------> [PostgreSQL: usuários/eventos]
+[FastAPI] ----------------------> [PostgreSQL: usuários, eventos e cotas]
 [FastAPI] ----------------------> [AWS SQS opcional: Terraform]
-[FastAPI /learning/assistant] --> [Adapter de IA opcional]
+[FastAPI] ----------------------> [Gemini: assistente e geração estruturada]
 ```
 
 ## Requisitos
@@ -40,20 +45,18 @@ ambiente e funciona sem acoplar domínio ou rotas a um fornecedor.
 por valores locais fortes para
 `POSTGRES_PASSWORD` e `JWT_SECRET_KEY` (pelo menos 32 caracteres). Uma chave
 pode ser gerada com `python -c "import secrets; print(secrets.token_urlsafe(48))"`.
-2. Inicialize a API e o banco:
+2. Inicialize os serviços a partir da raiz:
 
 ```powershell
-Copy-Item .env.example .env
 docker compose up --build
 ```
 
-Compose lê `.env` para interpolar configurações; não versione esse arquivo.
+Compose lê `.env` para interpolar configurações. Mantenha o arquivo local.
 A API aguarda o healthcheck do PostgreSQL e executa `alembic upgrade head`
 antes de iniciar.
 3. Acesse a documentação interativa em <http://localhost:8000/docs> e a
 verificação de saúde em <http://localhost:8000/health>.
-4. Finalize com `docker compose down`. Os dados permanecem no volume nomeado;
-use `docker compose down -v` somente se quiser removê-los.
+4. Finalize com `docker compose down`. Os dados permanecem no volume nomeado.
 
 O `.env.example` contém exclusivamente placeholders fictícios e não são
 credenciais. O `.env` local é ignorado pelo Git; nunca o versione nem reutilize
@@ -65,11 +68,57 @@ Para publicar telemetria na SQS, configure `AWS_REGION` e `SQS_QUEUE_URL` no
 IAM Roles/credenciais temporárias. Sem `SQS_QUEUE_URL`, a API ainda armazena os
 eventos no PostgreSQL.
 
-O assistente opcional aceita um endpoint compatível com Chat Completions por
-`AI_API_URL`, `AI_MODEL`, `AI_TIMEOUT_SECONDS` e `AI_API_KEY`. Use um secret
-manager em produção; quando não configurado, `/api/v1/learning/assistant`
+O assistente opcional usa a API REST Gemini por `GEMINI_API_KEY` (ou `AI_API_KEY`
+como alias), `AI_MODEL` e `AI_TIMEOUT_SECONDS`. O valor padrão de modelo é
+`gemini-3.5-flash-lite`. A chave só é enviada pelo backend ao Google. Use um secret
+manager em produção. Quando não configurado, `/api/v1/learning/assistant`
 responde `503` explicitamente. O endpoint requer usuário autenticado. Não envie
 segredos, dados pessoais ou informações confidenciais em prompts.
+
+## Frontend
+
+A interface React/Vite está em <http://localhost:3000>. Para desenvolvimento
+separado, inicie a API e execute os comandos abaixo na pasta `frontend`.
+
+```sh
+npm ci
+npm run dev
+npm run build
+```
+
+O Vite encaminha `/api` e `/health` para `127.0.0.1:8000`. O manifesto dos
+ativos é gerado por `node scripts/import_assets.mjs` na raiz, usando os nomes
+de arquivo em `base/`. O build usa as cópias de `frontend/public/assets/`.
+Os dois currículos e o guia da feira ficam em `base/`. Os registros curados
+estão em `backend/app/data/profile.json` e `backend/app/data/job_fair.json`.
+O painel usa os contatos profissionais do guia com endereço inequívoco.
+
+## Deploy e migração
+
+- No Neon, use uma conexão PostgreSQL com TLS. Na API, configure `DATABASE_URL`
+  com o esquema `postgresql+psycopg://`. Rode `alembic upgrade head` na imagem
+  do backend durante o release, antes de receber tráfego. A revisão `0002`
+  cria a tabela de cotas compartilhada.
+- No Render ou Cloud Run, publique a imagem de `backend/Dockerfile` com a raiz
+  como contexto. Configure `APP_ENVIRONMENT=production`, `JWT_SECRET_KEY`,
+  `DATABASE_URL` e, para habilitar a IA, `GEMINI_API_KEY`. O servidor usa
+  `${PORT:-8000}`. O cadastro público é fechado por padrão em produção.
+  Use `PUBLIC_REGISTRATION=true` se quiser permitir criações de conta.
+- Na Vercel, use `frontend` como diretório raiz, `npm run build` e saída `dist`.
+  Configure `VITE_API_BASE_URL` com a URL HTTPS pública da API e inclua a origem
+  exata da Vercel em `FRONTEND_ORIGINS` no backend. Com um proxy de mesma
+  origem, use URLs relativas. Para cotas por IP atrás de proxy, configure
+  `FORWARDED_ALLOW_IPS` com os endereços ou redes confiáveis do ingress.
+- Em uma instalação Compose existente, preserve o volume e os valores atuais
+  de `POSTGRES_DB`, `POSTGRES_USER` e `DATABASE_URL` até migrar os dados e o
+  usuário de forma explícita. Se a pasta do projeto mudar, use o nome do
+  projeto Compose anterior para reutilizar o volume. O SQLite legado continua
+  utilizável até a cópia ou renomeação explícita do arquivo local.
+- Em um ambiente AWS existente, mantenha o `queue_name` implantado por variável
+  até coordenar a troca de fila principal, DLQ e `SQS_QUEUE_URL`. Revise
+  `terraform plan` antes de aplicar alterações de nome.
+- Para trocar o slug do repositório, renomeie-o no GitHub e atualize
+  `origin` para a URL do novo slug antes de renomear o checkout local.
 
 ## Execução local
 
@@ -98,8 +147,12 @@ segredos são configuração do ambiente, não valores padrão no código.
 - `GET /api/v1/analytics/events`: lista eventos do usuário; aceita `severity`,
   `created_after`, `created_before`, `limit` e `offset`.
 - `GET /api/v1/analytics/summary`: agrega contagens por severidade para o usuário.
-- `POST /api/v1/learning/assistant`: pergunta educacional para adapter de IA
+- `POST /api/v1/learning/logic`: executa exercício de média móvel ou logs críticos.
+- `POST /api/v1/learning/assistant`: pergunta educacional para adapter Gemini
   opcional, com limite de tamanho e autenticação.
+- `GET /api/v1/hub/profile` e `GET /api/v1/hub/job-fair` servem o portfólio e o guia.
+- `POST /api/v1/study/generate` gera uma revisão por trilha com Gemini.
+- `POST /api/v1/career/tailor` cruza a vaga com o perfil mestre e a empresa opcional.
 
 ## Banco e índices
 
@@ -168,12 +221,14 @@ por ambiente antes de compartilhar/operar infraestrutura.
 - [SQL e NoSQL](docs/databases_guide.md)
 - [Cloud e Terraform](docs/cloud_and_terraform.md)
 - [Python do básico ao avançado](docs/python_mastery.md)
+- [Guia mestre integrado de estudos](docs/STUDY_GUIDE.md)
 
 ## Estrutura principal
 
 ```text
 backend/app/       API, configuração, domínio, serviços e rotas
 backend/migrations/ Migrações Alembic
+frontend/          Aplicação React/Vite e Nginx
 terraform/         Fila SQS e variáveis AWS
 terraform/modules/ Módulos IaC reutilizáveis
 docs/              Guias técnicos e trilhas de estudo
