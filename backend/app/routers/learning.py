@@ -1,19 +1,21 @@
 """Rotas de aprendizagem; a IA é opcional, autenticada e desacoplada por Protocol."""
 
-from typing import Annotated
+from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field, field_validator
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import BaseModel, Field, FiniteFloat, field_validator
+from sqlalchemy.orm import Session
 
-from app.limits import enforce_ai_quota
-from app.models.domain import User
-from app.security import get_current_user
+from app.config import get_settings
+from app.database import get_db
+from app.limits import client_ip, enforce_ai_quota, enforce_limit
 from app.services.assistant import (
     AssistantNotConfiguredError,
     AssistantProvider,
     AssistantProviderError,
     get_assistant_provider,
 )
+from src.domain.challenge import AnalyticsEngine
 
 router = APIRouter(prefix="/learning", tags=["learning"])
 
@@ -40,10 +42,74 @@ class AssistantResponse(BaseModel):
     answer: str
 
 
+class RollingAverageRequest(BaseModel):
+    """Entrada tipada para exercício de média móvel."""
+
+    task: Literal["rolling_average"]
+    scores: list[Annotated[FiniteFloat, Field(ge=-1e100, le=1e100)]] = Field(
+        min_length=1, max_length=1000
+    )
+    window_size: int = Field(ge=1, le=1000)
+
+
+class ExerciseLog(BaseModel):
+    severity: str = Field(default="", max_length=16)
+    error_code: str = Field(default="", max_length=128)
+
+
+class CriticalLogsRequest(BaseModel):
+    """Entrada tipada para exercício de varredura de logs."""
+
+    task: Literal["critical_logs"]
+    logs: list[ExerciseLog] = Field(max_length=1000)
+
+
+class LogicResponse(BaseModel):
+    """Saída estável dos exercícios do motor de domínio."""
+
+    task: str
+    result: list[float] | list[str]
+    explanation: str
+
+
+@router.post("/logic", response_model=LogicResponse)
+def run_logic_exercise(
+    payload: RollingAverageRequest | CriticalLogsRequest,
+    request: Request,
+    db: Annotated[Session, Depends(get_db)],
+) -> LogicResponse:
+    """Executa exercícios puros do domínio, sem estado ou dependência externa."""
+
+    enforce_limit(db, "logic", client_ip(request), get_settings().rate_limit_logic)
+    if isinstance(payload, RollingAverageRequest):
+        result = AnalyticsEngine.calculate_rolling_average(
+            payload.scores,
+            payload.window_size,
+        )
+        return LogicResponse(
+            task=payload.task,
+            result=result,
+            explanation=(
+                "Cada valor é a média de uma janela contígua; uma janela maior "
+                "que a entrada produz uma lista vazia."
+            ),
+        )
+
+    critical_codes = AnalyticsEngine.find_critical_errors(
+        [log.model_dump() for log in payload.logs]
+    )
+    return LogicResponse(
+        task=payload.task,
+        result=sorted(critical_codes),
+        explanation=(
+            "Foram selecionados códigos únicos com severidade ERROR ou CRITICAL."
+        ),
+    )
+
+
 @router.post("/assistant", response_model=AssistantResponse)
 async def ask_assistant(
     payload: AssistantRequest,
-    _current_user: Annotated[User, Depends(get_current_user)],
     _quota: Annotated[None, Depends(enforce_ai_quota)],
     provider: Annotated[AssistantProvider, Depends(get_assistant_provider)],
 ) -> AssistantResponse:

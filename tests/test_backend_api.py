@@ -1,9 +1,14 @@
 """Funções pytest tipadas verificam contratos HTTP, isolamento e agregações."""
 
+import asyncio
+from types import SimpleNamespace
+
+from pydantic import SecretStr
 from fastapi.testclient import TestClient
 
 from app.services.engine import count_by_severity
 from app.services.assistant import get_assistant_provider
+from app.services import assistant as assistant_service
 from src.domain.curriculum import LearningTrack, lessons_for_track
 
 
@@ -117,3 +122,106 @@ def test_assistant_route_requires_authentication_and_uses_injected_provider(
     )
     assert response.status_code == 200
     assert response.json() == {"answer": "Resposta: O que é Python?"}
+
+
+def test_logic_endpoint_executes_domain_exercises(client: TestClient) -> None:
+    """Garante que terminal e backend usem as mesmas regras puras do domínio."""
+
+    average = client.post(
+        "/api/v1/learning/logic",
+        json={
+            "task": "rolling_average",
+            "scores": [10, 20, 30, 40],
+            "window_size": 2,
+        },
+    )
+    assert average.status_code == 200
+    assert average.json()["result"] == [15.0, 25.0, 35.0]
+
+    critical_logs = client.post(
+        "/api/v1/learning/logic",
+        json={
+            "task": "critical_logs",
+            "logs": [
+                {"severity": "ERROR", "error_code": "ERR_1"},
+                {"severity": "CRITICAL", "error_code": "ERR_2"},
+                {"severity": "INFO", "error_code": "INF_1"},
+            ],
+        },
+    )
+    assert critical_logs.status_code == 200
+    assert critical_logs.json()["result"] == ["ERR_1", "ERR_2"]
+
+
+def test_health_endpoint_reports_database_and_optional_queue(
+    client: TestClient,
+    monkeypatch,
+) -> None:
+    """Verifica que o dashboard recebe estado de banco e fila sem dados sensíveis."""
+
+    monkeypatch.setattr("app.main.check_sqs_connection", lambda: "disabled")
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "ok",
+        "database": "ok",
+        "sqs": "disabled",
+    }
+
+
+def test_gemini_adapter_uses_header_and_parses_rest_response(monkeypatch) -> None:
+    """Exercita o adapter Gemini com transporte falso e chave de teste local."""
+
+    api_key = "local-test-only-not-a-real-key"
+    monkeypatch.setattr(
+        assistant_service,
+        "get_settings",
+        lambda: SimpleNamespace(
+            gemini_api_key=SecretStr(api_key),
+            ai_model="gemini-2.5-flash",
+            ai_timeout_seconds=5,
+        ),
+    )
+
+    class FakeResponse:
+        def raise_for_status(self) -> None:
+            """Imita resposta HTTP de sucesso para o adapter."""
+
+        def json(self) -> dict[str, object]:
+            """Retorna o formato candidates/parts utilizado pela API Gemini."""
+
+            return {
+                "candidates": [
+                    {
+                        "content": {
+                            "parts": [{"text": "Primeira parte."}, {"text": "Segunda."}]
+                        }
+                    }
+                ]
+            }
+
+    class FakeAsyncClient:
+        async def __aenter__(self):
+            """Retorna o transporte falso como context manager assíncrono."""
+
+            return self
+
+        async def __aexit__(self, *args: object) -> None:
+            """Fecha o context manager falso sem consumir exceções."""
+
+        async def post(self, url: str, *, json: object, headers: dict[str, str]):
+            """Captura request para garantir que a credencial nunca vá na URL."""
+
+            assert url.endswith("/models/gemini-2.5-flash:generateContent")
+            assert api_key not in url
+            assert headers["x-goog-api-key"] == api_key
+            assert isinstance(json, dict)
+            return FakeResponse()
+
+    monkeypatch.setattr(
+        assistant_service.httpx,
+        "AsyncClient",
+        lambda **kwargs: FakeAsyncClient(),
+    )
+    answer = asyncio.run(assistant_service.GeminiAssistant().answer("Explique slicing"))
+    assert answer == "Primeira parte.\nSegunda."

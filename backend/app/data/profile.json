@@ -1,0 +1,200 @@
+{
+  "name": "Nicolas de Jesus Silva",
+  "headline": "Estudante de ADS · Cloud, DevOps e Backend",
+  "summary": "Estudo Análise e Desenvolvimento de Sistemas na UniFAAT e construo aplicações full-stack, APIs e soluções de nuvem. Nos meus projetos, combino automação de infraestrutura, mensageria, bancos de dados e integração com IA. Busco oportunidades de estágio ou nível júnior em engenharia de nuvem, DevOps e backend.",
+  "links": [
+    {
+      "label": "LinkedIn",
+      "url": "https://www.linkedin.com/in/nxcolasdev/"
+    },
+    {
+      "label": "GitHub",
+      "url": "https://github.com/NxcolasDev"
+    }
+  ],
+  "education": [
+    {
+      "title": "Análise e Desenvolvimento de Sistemas",
+      "organization": "Centro Universitário UniFAAT",
+      "period": "Desde 2025 · Em andamento"
+    },
+    {
+      "title": "Estudos em Administração de Empresas",
+      "organization": "Escola José Alvim",
+      "period": "2023–2024"
+    }
+  ],
+  "experience": [
+    {
+      "title": "Assistente de Atendimento ao Cliente",
+      "organization": "Serviços Independentes",
+      "period": "Jul–out de 2024",
+      "details": [
+        "Atendimento ao público e resolução de pendências em ambiente de alto volume.",
+        "Organização operacional e gestão de demandas sob pressão."
+      ]
+    },
+    {
+      "title": "Atendente / Jovem Aprendiz",
+      "organization": "Subway",
+      "period": "Mai de 2023–mai de 2024",
+      "details": [
+        "Operação e fechamento de caixa, conferência de movimentações e suporte à rotina da loja.",
+        "Atuação em equipe e cumprimento de prazos operacionais."
+      ]
+    }
+  ],
+  "skills": [
+    "AWS",
+    "Google Cloud",
+    "Terraform",
+    "Docker",
+    "Docker Compose",
+    "CI/CD",
+    "Linux",
+    "Nginx",
+    "Node.js",
+    "TypeScript",
+    "JavaScript",
+    "Python",
+    "Express.js",
+    "FastAPI",
+    "APIs REST",
+    "Arquitetura orientada a eventos",
+    "PostgreSQL",
+    "MySQL",
+    "MongoDB",
+    "SQL",
+    "React",
+    "Vite",
+    "Tailwind CSS",
+    "Integração com APIs de IA",
+    "Git/GitHub"
+  ],
+  "languages": [
+    {
+      "name": "Português",
+      "level": "Nativo"
+    },
+    {
+      "name": "Inglês",
+      "level": "Avançado / fluente"
+    },
+    {
+      "name": "Francês",
+      "level": "Intermediário / avançado"
+    },
+    {
+      "name": "Espanhol",
+      "level": "Intermediário / avançado"
+    },
+    {
+      "name": "Italiano",
+      "level": "Básico / intermediário, em estudo"
+    }
+  ],
+  "credentials": [
+    {
+      "id": "aws-foundations",
+      "title": "AWS Academy Graduate · Cloud Foundations",
+      "status": "Badge concluído"
+    },
+    {
+      "id": "aws-architecting",
+      "title": "AWS Academy Graduate · Cloud Architecting",
+      "status": "Badge concluído"
+    },
+    {
+      "id": "aws-essentials",
+      "title": "AWS Cloud Practitioner Essentials",
+      "status": "Treinamento"
+    },
+    {
+      "id": "gcp-skills",
+      "title": "Google Cloud Skill Badges",
+      "status": "Cloud Network, App Dev, Data for ML APIs e Load Balancing"
+    },
+    {
+      "id": "gcp-foundations",
+      "title": "Google Cloud Computing Foundations Certificate",
+      "status": "Em andamento"
+    },
+    {
+      "id": "aws-clf",
+      "title": "AWS Certified Cloud Practitioner (CLF-C02)",
+      "status": "Em preparação"
+    }
+  ],
+  "projects": [
+    {
+      "id": "nicolas-hub",
+      "title": "Nicolas Hub",
+      "summary": "Portfólio e ambiente de aprendizagem com exercícios de lógica, analytics, telemetria SQS e integração Gemini.",
+      "stack": [
+        "React",
+        "FastAPI",
+        "PostgreSQL",
+        "AWS SQS",
+        "Gemini"
+      ]
+    },
+    {
+      "id": "gestoriq",
+      "title": "GestorIQ / Gestor AIQ Enhanced",
+      "summary": "Solução orientada a eventos para automação de notificações, gestão de dados e auditoria, com infraestrutura em Terraform.",
+      "stack": [
+        "Node.js",
+        "PostgreSQL",
+        "AWS S3",
+        "AWS Lambda",
+        "AWS SNS",
+        "Terraform",
+        "Docker"
+      ]
+    },
+    {
+      "id": "elan",
+      "title": "Élan",
+      "summary": "Aplicação de aprendizagem full-stack com API LLaMA para processamento de linguagem e serviços em Docker Compose.",
+      "stack": [
+        "React",
+        "Node.js",
+        "Express.js",
+        "PostgreSQL",
+        "Docker",
+        "LLaMA"
+      ]
+    },
+    {
+      "id": "corner",
+      "title": "Corner",
+      "summary": "Plataforma de repetição espaçada e gerenciamento de dados com API REST e persistência em MongoDB.",
+      "stack": [
+        "React",
+        "Node.js",
+        "Express.js",
+        "MongoDB"
+      ]
+    },
+    {
+      "id": "mensageria",
+      "title": "Mensageria distribuída multi-cloud",
+      "summary": "Experimentos com integração assíncrona e tratamento de falhas com filas de mensagens não processadas.",
+      "stack": [
+        "Node.js",
+        "AWS SQS",
+        "Google Cloud Pub/Sub"
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "Kiro",
+      "summary": "1º lugar na dinâmica do evento, que ocorreu no dia do apagão da Tecno."
+    },
+    {
+      "name": "AWS Student Data",
+      "summary": "Participação no encontro estudantil sobre AWS e dados."
+    }
+  ]
+}

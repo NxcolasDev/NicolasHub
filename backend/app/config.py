@@ -4,7 +4,7 @@ from functools import lru_cache
 from typing import Literal
 from urllib.parse import urlsplit
 
-from pydantic import Field, SecretStr, model_validator
+from pydantic import AliasChoices, Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -32,9 +32,13 @@ class Settings(BaseSettings):
     request_max_bytes: int = Field(default=262144, ge=1024, le=1048576)
     aws_region: str = "us-east-1"
     sqs_queue_url: str | None = None
-    ai_api_url: str | None = None
-    ai_api_key: SecretStr | None = None
-    ai_model: str = "default"
+    gemini_api_key: SecretStr | None = Field(
+        default=None,
+        validation_alias=AliasChoices("GEMINI_API_KEY", "AI_API_KEY"),
+    )
+    ai_model: str = Field(
+        default="gemini-3.5-flash-lite", pattern=r"^[A-Za-z0-9][\w.-]*$"
+    )
     ai_timeout_seconds: float = Field(default=20.0, gt=0, le=120)
     frontend_origins: str = ""
 

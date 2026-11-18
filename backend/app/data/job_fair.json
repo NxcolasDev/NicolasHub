@@ -1,0 +1,173 @@
+{
+  "name": "Job Fair Google Cloud",
+  "date": "2026-12-02",
+  "companies": [
+    {
+      "id": "adecco",
+      "name": "Adecco",
+      "areas": "Recrutamento, trabalho temporário, estágios e terceirização.",
+      "culture": "Empregabilidade e inclusão no mercado de trabalho.",
+      "contacts": [
+        "fernanda.pereira@adecco.com",
+        "Nadja.Youssef@adecco.com"
+      ],
+      "jobs": "https://docs.google.com/spreadsheets/d/1yimFWpOaS1xIKZ65tax9Py3PzQ2Et6ui5jBgpuLDyFQ/edit?gid=0&resourcekey=0-iK1ODX64cj9iicGBZ0Iq6w#gid=0",
+      "linkedin": "https://www.linkedin.com/company/adecco/about/"
+    },
+    {
+      "id": "almaviva",
+      "name": "Almaviva Solutions",
+      "areas": "Transformação digital e soluções de TI para organizações públicas e privadas.",
+      "culture": "Desenvolvimento das pessoas, confiança e eficiência operacional.",
+      "contacts": [
+        "ksilva@almavivasolutions.com.br"
+      ],
+      "jobs": "https://almavivasolutions.gupy.io/jobs/12840353",
+      "linkedin": "https://www.linkedin.com/company/almaviva-solutions/"
+    },
+    {
+      "id": "autenticare",
+      "name": "Autenticare",
+      "areas": "Soluções tecnológicas para educação, saúde, varejo, transportes e indústria.",
+      "culture": "Autonomia, colaboração e aprendizado contínuo.",
+      "contacts": [
+        "recrutamento@autenticare.com.br"
+      ],
+      "jobs": "https://www.linkedin.com/company/somosautenticare/jobs",
+      "linkedin": "https://www.linkedin.com/company/somosautenticare"
+    },
+    {
+      "id": "datalakers",
+      "name": "DataLakers",
+      "areas": "Consultoria em engenharia de dados, governança, DataOps e IA.",
+      "culture": "Evolução contínua, colaboração e resultados com dados.",
+      "contacts": [
+        "carolina.silva@datalakers.com.br"
+      ],
+      "jobs": "https://datalakers.com.br/seja_laker",
+      "linkedin": "https://www.linkedin.com/company/datalakers/"
+    },
+    {
+      "id": "calriz",
+      "name": "Grupo Calriz",
+      "areas": "Infraestrutura digital, nuvem e IA para empresas e governos.",
+      "culture": "Eficiência, segurança e sustentabilidade.",
+      "contacts": [
+        "rh@calriz.com",
+        "felipemartins@calriz.com"
+      ],
+      "jobs": "https://www.linkedin.com/company/calriz/jobs/",
+      "linkedin": null
+    },
+    {
+      "id": "ingram",
+      "name": "Ingram Micro",
+      "areas": "Distribuição de TI, cloud, automação, logística e serviços técnicos.",
+      "culture": "Apoio ao ecossistema de parceiros e à cadeia de distribuição de tecnologia.",
+      "contacts": [
+        "ellen.nogueira@ingrammicro.com"
+      ],
+      "jobs": "https://careers.ingrammicro.com/en/jobs/?search=&country=Brazil&pagesize=20#results",
+      "linkedin": null
+    },
+    {
+      "id": "ipnet",
+      "name": "IPNET by Vivo",
+      "areas": "Consultoria e implementação em Google Cloud, dados e IA.",
+      "culture": "Trabalho híbrido, colaboração, inclusão e formação pela IPNET Academy.",
+      "contacts": [
+        "recrutamento@ipnet.cloud"
+      ],
+      "jobs": "https://ipnet.inhire.app/vagas/727de957-97f7-4ec5-86ed-c63ae80179d3/job-fair-or-2026",
+      "linkedin": "https://www.linkedin.com/company/ipnet/"
+    },
+    {
+      "id": "leega",
+      "name": "Leega",
+      "areas": "Consultoria em Data Analytics, Cloud, IA, Big Data e engenharia de dados.",
+      "culture": "Capacitação, transparência, ética e liberdade com responsabilidade.",
+      "contacts": [
+        "recrutamento@leega.com.br"
+      ],
+      "jobs": "https://leega.gupy.io/jobs/12784488",
+      "linkedin": "https://www.linkedin.com/company/leegaconsultoria/"
+    },
+    {
+      "id": "movti",
+      "name": "Movti Cloud Solutions",
+      "areas": "Transformação digital e soluções Google Cloud.",
+      "culture": "Trabalho remoto, autonomia, adaptação e aprendizado contínuo.",
+      "contacts": [
+        "recrutamento@movti.com.br"
+      ],
+      "jobs": null,
+      "linkedin": "https://www.linkedin.com/company/movti/"
+    },
+    {
+      "id": "qi",
+      "name": "QI Network",
+      "areas": "Google Cloud, infraestrutura, DevOps, segurança, FinOps, dados, IA e Workspace.",
+      "culture": "Desenvolvimento profissional, acolhimento e trabalho distribuído.",
+      "contacts": [
+        "michele@qinetwork.com.br"
+      ],
+      "jobs": "https://qinetwork.vagas.solides.com.br/vaga/953586",
+      "linkedin": "https://www.linkedin.com/company/qi-network-google-cloud-partner/"
+    },
+    {
+      "id": "santo",
+      "name": "SantoDigital",
+      "areas": "Google Cloud, IA generativa, agentes e análise de dados.",
+      "culture": "Ética, bem-estar, agilidade e aprendizado em projetos.",
+      "contacts": [
+        "rh@santodigital.com.br"
+      ],
+      "jobs": "https://santodigital.com.br/carreiras/",
+      "linkedin": "https://www.linkedin.com/company/santodigital/jobs/"
+    },
+    {
+      "id": "servinformacion",
+      "name": "Servinformacion",
+      "areas": "Inteligência geográfica, análise de dados, Big Data, ML e IA.",
+      "culture": "Soluções de dados e localização orientadas a decisões de negócio.",
+      "contacts": [
+        "franciele.dallagnol@servinformacion.com"
+      ],
+      "jobs": null,
+      "linkedin": "https://www.linkedin.com/company/servinformacion-brasil/"
+    },
+    {
+      "id": "softwareone",
+      "name": "SoftwareOne",
+      "areas": "Consultoria, gestão de ativos, aplicações e modernização em nuvem.",
+      "culture": "Cultura global e colaborativa, com caminhos de aprendizado e crescimento.",
+      "contacts": [
+        "tatiana.berrocal@softwareone.com"
+      ],
+      "jobs": "https://careers.softwareone.com/",
+      "linkedin": "https://www.linkedin.com/company/softwareone-latam/"
+    },
+    {
+      "id": "venha",
+      "name": "Venha Pra Nuvem",
+      "areas": "Cloud híbrida, IA, cibersegurança, automação e produtividade.",
+      "culture": "Flexibilidade e personalização em projetos de transformação digital.",
+      "contacts": [
+        "curriculo@venhapranuvem.com.br"
+      ],
+      "jobs": null,
+      "linkedin": "https://www.linkedin.com/company/venha-pra-nuvem/"
+    },
+    {
+      "id": "xertica",
+      "name": "Xertica.ai",
+      "areas": "Consultoria em cloud e soluções de IA generativa para a América Latina.",
+      "culture": "IA responsável, inovação e impacto em negócios e instituições.",
+      "contacts": [
+        "kelly.oliveira@xertica.com"
+      ],
+      "jobs": "https://applicants.selenios.com/screening/xerticaai-banco-de-talentos-google-job-fair-46348d72-8d19-498b-8381-df8cfa04b2ef",
+      "linkedin": "https://www.linkedin.com/company/xertica-br/"
+    }
+  ]
+}

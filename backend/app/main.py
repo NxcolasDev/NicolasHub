@@ -15,7 +15,7 @@ from starlette.concurrency import run_in_threadpool
 from app.config import get_settings
 from app.database import get_db
 from app.limits import RequestBodyLimit
-from app.routers import analytics, auth, learning
+from app.routers import analytics, auth, hub, learning, preparation
 from app.services.telemetry import check_sqs_connection
 
 settings = get_settings()
@@ -86,6 +86,8 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(analytics.router, prefix="/api/v1")
 app.include_router(learning.router, prefix="/api/v1")
+app.include_router(hub.router, prefix="/api/v1")
+app.include_router(preparation.router, prefix="/api/v1")
 
 
 @app.get("/health", tags=["health"])
