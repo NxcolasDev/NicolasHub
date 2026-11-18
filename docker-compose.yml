@@ -67,6 +67,24 @@ services:
       retries: 5
       start_period: 20s
 
+  # Nginx serves the compiled React app and proxies API requests over the private network.
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - nicolas-hub
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
 
 networks:
   # Rede bridge privada permite comunicação por nome de serviço sem expor o banco.
