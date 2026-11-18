@@ -2,14 +2,16 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, ValidationError
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.config import get_settings
 from app.database import get_db
+from app.limits import client_ip, enforce_limit
 from app.models.domain import User
 from app.security import create_access_token, hash_password, verify_password
 
@@ -21,6 +23,11 @@ class RegisterRequest(BaseModel):
 
     email: EmailStr
     password: str = Field(min_length=12, max_length=128)
+
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=1, max_length=128)
 
 
 class UserResponse(BaseModel):
@@ -44,10 +51,15 @@ class TokenResponse(BaseModel):
 )
 def register(
     payload: RegisterRequest,
+    request: Request,
     db: Annotated[Session, Depends(get_db)],
 ) -> User:
     """Valida entrada, persiste conta e trata email duplicado."""
 
+    settings = get_settings()
+    if not settings.registration_enabled:
+        raise HTTPException(403, "O cadastro público está desativado.")
+    enforce_limit(db, "register", client_ip(request), settings.rate_limit_register)
     normalized_email = str(payload.email).lower()
     if db.scalar(select(User.id).where(User.email == normalized_email)) is not None:
         raise HTTPException(
@@ -71,12 +83,21 @@ def register(
 @router.post("/login", response_model=TokenResponse)
 def login(
     form: Annotated[OAuth2PasswordRequestForm, Depends()],
+    request: Request,
     db: Annotated[Session, Depends(get_db)],
 ) -> TokenResponse:
     """Verifica credenciais do formulário e emite JWT."""
 
-    user = db.scalar(select(User).where(User.email == form.username.lower()))
-    if user is None or not verify_password(form.password, user.hashed_password):
+    enforce_limit(db, "login", client_ip(request), get_settings().rate_limit_login)
+    if len(form.username) > 254 or len(form.password) > 128:
+        raise HTTPException(422, "Revise as credenciais informadas.")
+    try:
+        credentials = LoginRequest(email=form.username, password=form.password)
+    except ValidationError as error:
+        raise HTTPException(422, "Revise as credenciais informadas.") from error
+
+    user = db.scalar(select(User).where(User.email == str(credentials.email).lower()))
+    if user is None or not verify_password(credentials.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Email ou senha inválidos.",

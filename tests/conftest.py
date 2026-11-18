@@ -13,14 +13,17 @@ from sqlalchemy.pool import StaticPool
 os.environ.setdefault("JWT_SECRET_KEY", secrets.token_urlsafe(48))
 os.environ.setdefault("SQS_QUEUE_URL", "")
 
+from app import limits  # noqa: E402
 from app.database import Base, get_db  # noqa: E402
 from app.main import app  # noqa: E402
 
 
 @pytest.fixture
-def client() -> Generator[TestClient, None, None]:
+def client(monkeypatch: pytest.MonkeyPatch) -> Generator[TestClient, None, None]:
     """Cria esquema e substitui Depends da API durante o ciclo de vida do teste."""
 
+    monkeypatch.setattr(limits, "_window", -1)
+    monkeypatch.setattr(limits, "_counts", {})
     test_engine = create_engine(
         "sqlite://",
         connect_args={"check_same_thread": False},

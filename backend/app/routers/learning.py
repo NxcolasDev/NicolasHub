@@ -5,6 +5,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field, field_validator
 
+from app.limits import enforce_ai_quota
 from app.models.domain import User
 from app.security import get_current_user
 from app.services.assistant import (
@@ -43,6 +44,7 @@ class AssistantResponse(BaseModel):
 async def ask_assistant(
     payload: AssistantRequest,
     _current_user: Annotated[User, Depends(get_current_user)],
+    _quota: Annotated[None, Depends(enforce_ai_quota)],
     provider: Annotated[AssistantProvider, Depends(get_assistant_provider)],
 ) -> AssistantResponse:
     """Usa async/await na porta do provider e converte falhas em erros explícitos."""
@@ -57,6 +59,6 @@ async def ask_assistant(
     except AssistantProviderError as error:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=str(error),
+            detail="O serviço de IA está indisponível. Tente novamente.",
         ) from error
     return AssistantResponse(answer=answer)

@@ -2,7 +2,7 @@
 
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, String
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -40,3 +40,13 @@ class Event(Base):
         index=True,
     )
     user: Mapped[User] = relationship(back_populates="events")
+
+
+class RequestRateLimit(Base):
+    """Contador por identidade e janela de tempo compartilhado entre instâncias."""
+
+    __tablename__ = "request_rate_limits"
+
+    bucket: Mapped[str] = mapped_column(String(100), primary_key=True)
+    window_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    hits: Mapped[int] = mapped_column(Integer)

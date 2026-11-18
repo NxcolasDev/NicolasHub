@@ -4,6 +4,11 @@ __pycache__/
 .venv/
 venv/
 .env
+.env.*
+!.env.example
+.work/
+/base/
+*.tsbuildinfo
 .pytest_cache/
 .coverage
 dist/
@@ -11,3 +16,11 @@ build/
 *.egg-info/
 *.db
 .terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+*.tfplan
+!*.tfvars.example
+node_modules/
+frontend/dist/
