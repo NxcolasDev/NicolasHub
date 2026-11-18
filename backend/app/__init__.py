@@ -1,1 +1,1 @@
-"""Pacote da API PyLogic Engine."""
+"""Pacote da API Nicolas Hub."""

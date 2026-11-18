@@ -6,7 +6,7 @@ from src.domain.challenge import AnalyticsEngine
 def show_banner() -> None:
     """Exibe o header no estilo terminal/hacker."""
     print("=" * 60)
-    print("      PYLOGIC ENGINE - CLI & CLOUD ANALYTICS v1.0      ")
+    print("      NICOLAS HUB - CLI & CLOUD ANALYTICS v1.0      ")
     print("=" * 60)
     print("[ System Ready | Pure Python Mode Active ]\n")
 
@@ -54,7 +54,7 @@ def main() -> None:
         elif choice == "2":
             run_logs_demo()
         elif choice == "3":
-            print("\nFinalizando PyLogic Engine. Até logo!")
+            print("\nFinalizando Nicolas Hub. Até logo!")
             sys.exit(0)
         else:
             print("\nOpção inválida! Tente novamente.")

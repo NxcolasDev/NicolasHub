@@ -1,6 +1,5 @@
 <div align="center">
-<img src="assets/logo.png" alt="PyLogic Engine" width="160"/>
-<h1>PyLogic Engine</h1>
+<h1>Nicolas Hub</h1>
 <p>Ecossistema de aprendizagem interativa para Python, Cloud, dados, Terraform e DevOps.</p>
 
 [![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
@@ -12,7 +11,7 @@
 
 ## Visão geral
 
-O PyLogic Engine combina CLI, API de aprendizagem, analytics e um assistente de
+O Nicolas Hub combina CLI, API de aprendizagem, analytics e um assistente de
 IA opcional. A trilha abrange fundamentos e engenharia Python, cloud AWS/GCP,
 bancos SQL/NoSQL, Terraform e DevOps. Eventos são persistidos no PostgreSQL e
 podem ser publicados em SQS. O assistente usa um adapter configurável por
@@ -81,7 +80,7 @@ Crie um ambiente virtual, instale as dependências e exporte `DATABASE_URL` e
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-$env:DATABASE_URL = "postgresql+psycopg://usuario:senha@localhost:5432/pylogic"
+$env:DATABASE_URL = "postgresql+psycopg://usuario:senha@localhost:5432/nicolas_hub"
 $env:JWT_SECRET_KEY = python -c "import secrets; print(secrets.token_urlsafe(48))"
 alembic -c backend/alembic.ini upgrade head
 uvicorn app.main:app --app-dir backend --reload

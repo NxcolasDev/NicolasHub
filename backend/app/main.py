@@ -8,7 +8,7 @@ from app.database import get_db
 from app.routers import analytics, auth, learning
 
 app = FastAPI(
-    title="PyLogic Engine API",
+    title="Nicolas Hub API",
     description="API de autenticação, analytics e telemetria.",
     version="1.0.0",
 )

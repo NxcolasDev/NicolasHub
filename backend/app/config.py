@@ -16,7 +16,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    database_url: str = "sqlite:///./pylogic.db"
+    database_url: str = "sqlite:///./nicolas_hub.db"
     jwt_secret_key: SecretStr | None = None
     jwt_access_token_expire_minutes: int = 30
     aws_region: str = "us-east-1"

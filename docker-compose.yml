@@ -4,13 +4,13 @@ services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-pylogic}
-      POSTGRES_USER: ${POSTGRES_USER:-pylogic}
+      POSTGRES_DB: ${POSTGRES_DB:-nicolas_hub}
+      POSTGRES_USER: ${POSTGRES_USER:-nicolas_hub}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no .env}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - pylogic
+      - nicolas-hub
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
       interval: 5s
@@ -24,7 +24,7 @@ services:
       context: .
       dockerfile: backend/Dockerfile
     environment:
-      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-pylogic}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-pylogic}
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-nicolas_hub}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-nicolas_hub}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Defina JWT_SECRET_KEY no .env}
       JWT_ACCESS_TOKEN_EXPIRE_MINUTES: ${JWT_ACCESS_TOKEN_EXPIRE_MINUTES:-30}
       AWS_REGION: ${AWS_REGION:-us-east-1}
@@ -42,7 +42,7 @@ services:
       db:
         condition: service_healthy
     networks:
-      - pylogic
+      - nicolas-hub
     command: ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
     healthcheck:
       test:
@@ -59,7 +59,7 @@ services:
 
 networks:
   # Rede bridge privada permite comunicação por nome de serviço sem expor o banco.
-  pylogic:
+  nicolas-hub:
     driver: bridge
 
 volumes:

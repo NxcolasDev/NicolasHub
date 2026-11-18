@@ -56,7 +56,7 @@ class OpenAICompatibleAssistant:
                 {
                     "role": "system",
                     "content": (
-                        "Você é o assistente educacional do PyLogic Engine. "
+                        "Você é o assistente educacional do Nicolas Hub. "
                         "Explique conceitos, ofereça exemplos seguros e incentive "
                         "o aprendizado sem alegar executar código."
                     ),

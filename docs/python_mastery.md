@@ -5,7 +5,7 @@ Os exemplos são independentes e usam apenas a biblioteca padrão.
 ## Básico: valores, condições e loops
 
 ```python
-name = "PyLogic"
+name = "Nicolas Hub"
 attempts = 0
 
 while attempts < 3:

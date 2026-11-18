@@ -37,13 +37,13 @@ filas com nomes, retenção e parâmetros distintos sem copiar blocos inteiros.
 ```hcl
 module "telemetry_dev" {
   source      = "./modules/sqs"
-  name        = "pylogic-telemetry-dev"
+  name        = "nicolas-hub-telemetry-dev"
   environment = "dev"
 }
 
 module "telemetry_prod" {
   source      = "./modules/sqs"
-  name        = "pylogic-telemetry-prod"
+  name        = "nicolas-hub-telemetry-prod"
   environment = "prod"
 }
 ```

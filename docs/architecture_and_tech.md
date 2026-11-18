@@ -2,7 +2,7 @@
 
 ## Objetivo do produto
 
-O PyLogic Engine é um ecossistema de aprendizagem prática, não apenas uma API de
+O Nicolas Hub é um ecossistema de aprendizagem prática, não apenas uma API de
 analytics. Sua trilha pode evoluir de fundamentos de Python para engenharia de
 software, bancos relacionais e NoSQL, cloud AWS/GCP, Terraform e DevOps. O
 assistente de IA é uma integração opcional: o domínio e as rotas não dependem de

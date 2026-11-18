@@ -14,7 +14,7 @@ variable "environment" {
 variable "queue_name" {
   description = "Prefixo lógico para a fila de telemetria."
   type        = string
-  default     = "pylogic-telemetry"
+  default     = "nicolas-hub-telemetry"
 }
 
 variable "visibility_timeout_seconds" {
