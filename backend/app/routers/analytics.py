@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.domain import Event, User
 from app.security import get_current_user
+from app.services.aws_identity import TelemetryIdentityError
 from app.services.telemetry import publish_event, record_event
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
@@ -70,7 +71,7 @@ async def create_event(
     )
     try:
         await publish_event(event)
-    except (BotoCoreError, ClientError) as error:
+    except (BotoCoreError, ClientError, TelemetryIdentityError) as error:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Evento foi salvo, mas a publicação de telemetria falhou.",

@@ -4,13 +4,12 @@ import asyncio
 import json
 from datetime import datetime, timezone
 
-import boto3
-from botocore.config import Config
 from botocore.exceptions import BotoCoreError, ClientError
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.models.domain import Event
+from app.services.aws_identity import TelemetryIdentityError, get_sqs_client
 
 
 def check_sqs_connection() -> str:
@@ -21,18 +20,16 @@ def check_sqs_connection() -> str:
         return "disabled"
 
     try:
-        client = boto3.client(
-            "sqs",
-            region_name=settings.aws_region,
-            config=Config(
-                connect_timeout=2, read_timeout=2, retries={"max_attempts": 1}
-            ),
+        client = get_sqs_client(
+            settings.aws_region,
+            settings.aws_sqs_role_arn,
+            settings.aws_web_identity_audience,
         )
         client.get_queue_attributes(
             QueueUrl=settings.sqs_queue_url,
             AttributeNames=["QueueArn"],
         )
-    except (BotoCoreError, ClientError):
+    except (BotoCoreError, ClientError, TelemetryIdentityError):
         return "error"
     return "connected"
 
@@ -68,12 +65,10 @@ async def publish_event(event: Event) -> bool:
     }
 
     def send_message() -> None:
-        client = boto3.client(
-            "sqs",
-            region_name=settings.aws_region,
-            config=Config(
-                connect_timeout=2, read_timeout=2, retries={"max_attempts": 1}
-            ),
+        client = get_sqs_client(
+            settings.aws_region,
+            settings.aws_sqs_role_arn,
+            settings.aws_web_identity_audience,
         )
         client.send_message(
             QueueUrl=settings.sqs_queue_url,

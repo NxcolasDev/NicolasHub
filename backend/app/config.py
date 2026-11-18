@@ -32,6 +32,8 @@ class Settings(BaseSettings):
     request_max_bytes: int = Field(default=262144, ge=1024, le=1048576)
     aws_region: str = "us-east-1"
     sqs_queue_url: str | None = None
+    aws_sqs_role_arn: str | None = None
+    aws_web_identity_audience: str | None = None
     gemini_api_key: SecretStr | None = Field(
         default=None,
         validation_alias=AliasChoices("GEMINI_API_KEY", "AI_API_KEY"),
@@ -57,6 +59,9 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_deployment(self) -> "Settings":
+        if bool(self.aws_sqs_role_arn) != bool(self.aws_web_identity_audience):
+            raise ValueError("AWS_SQS_ROLE_ARN e AWS_WEB_IDENTITY_AUDIENCE são um par.")
+
         for origin in self.allowed_origins:
             url = urlsplit(origin)
             allowed_schemes = (
