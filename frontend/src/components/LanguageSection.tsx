@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Volume2, VolumeX } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import type { Profile } from "../api";
 import { importantImage, skins } from "../data/sprites";
 import { AvatarStage } from "./PixelAvatar";
+import { AudioToggle, useSiteAudio } from "./SiteAudio";
+import type { LanguageAudio } from "./SiteAudio";
 
 const languages = {
   us: {
@@ -41,7 +42,7 @@ const languages = {
 
 type Language = keyof typeof languages;
 const codes = Object.keys(languages) as Language[];
-const formats = ["mp3", "m4a", "wav"];
+const audioScenes = Object.fromEntries(codes.map((id) => [id, { id, music: languages[id].music, voice: languages[id].voice }])) as Record<Language, LanguageAudio>;
 
 function LanguageScene({ code, level, audible }: { code: Language; level: string; audible: boolean }) {
   const { name, lang, country, skin, greeting, transcript, translation, motivation, goal } = languages[code];
@@ -85,140 +86,50 @@ function LanguageScene({ code, level, audible }: { code: Language; level: string
 
 export default function LanguageSection({ profile }: { profile: Profile | null }) {
   const section = useRef<HTMLElement>(null);
-  const music = useRef<HTMLAudioElement>(null);
-  const voice = useRef<HTMLAudioElement>(null);
-  const selected = useRef<Language | null>(null);
-  const enabled = useRef(false);
-  const playback = useRef<{ code: Language; stop: () => void } | null>(null);
-  const [sound, setSound] = useState(false);
-  const [audible, setAudible] = useState<Language | null>(null);
-  const [blocked, setBlocked] = useState(false);
-
-  const playLanguage = useCallback((code: Language | null) => {
-    if (playback.current?.code === code) return;
-    playback.current?.stop();
-    playback.current = null;
-    setAudible(null);
-    setBlocked(false);
-    const background = music.current;
-    const narration = voice.current;
-    if (!code || !background || !narration) return;
-
-    let stopped = false;
-    let frame = 0;
-    let musicPlaying = false;
-    let voicePlaying = false;
-    background.volume = .15;
-    narration.volume = 1;
-
-    function updateCaption() {
-      if (!stopped) setAudible(musicPlaying || voicePlaying ? code : null);
-    }
-    function raiseMusic() {
-      if (stopped) return;
-      voicePlaying = false;
-      updateCaption();
-      const start = performance.now();
-      const fade = (now: number) => {
-        const progress = Math.min(1, (now - start) / 900);
-        updateVolume(progress);
-        if (progress < 1) frame = requestAnimationFrame(fade);
-      };
-      frame = requestAnimationFrame(fade);
-    }
-    function updateVolume(progress: number) {
-      if (background) background.volume = .15 + progress * .2;
-    }
-    async function playTrack(audio: HTMLAudioElement, basename: string) {
-      for (const extension of formats) {
-        if (stopped) return false;
-        audio.src = `/assets/audios/${basename}.${extension}`;
-        try {
-          await audio.play();
-          return !stopped;
-        } catch (error) {
-          if (stopped) return false;
-          if (error instanceof DOMException && error.name === "NotAllowedError") {
-            setBlocked(true);
-            return false;
-          }
-        }
-      }
-      return false;
-    }
-
-    playback.current = { code, stop: () => {
-      stopped = true;
-      cancelAnimationFrame(frame);
-      narration.removeEventListener("ended", raiseMusic);
-      for (const audio of [background, narration]) {
-        audio.pause();
-        audio.removeAttribute("src");
-        audio.load();
-      }
-    } };
-    narration.addEventListener("ended", raiseMusic, { once: true });
-    void playTrack(background, languages[code].music).then((playing) => {
-      if (stopped) return;
-      musicPlaying = playing;
-      updateCaption();
-    });
-    void playTrack(narration, languages[code].voice).then((playing) => {
-      if (stopped) return;
-      voicePlaying = playing && !narration.ended;
-      if (!playing) raiseMusic();
-      else updateCaption();
-    });
-  }, []);
+  const { audible, reportScene } = useSiteAudio();
 
   useEffect(() => {
-    const elements = section.current?.querySelectorAll<HTMLElement>("[data-audio-language]");
-    if (!elements?.length) return;
+    const area = section.current;
+    if (!area || typeof IntersectionObserver === "undefined") return;
     const ratios = new Map<Language, number>();
-    const sync = () => { if (enabled.current) playLanguage(document.hidden ? null : selected.current); };
-    const observer = new IntersectionObserver((entries) => {
+    let inside = false;
+    function sync() {
+      let best: Language | null = null;
+      let largest = .22;
+      for (const code of codes) {
+        const ratio = ratios.get(code) ?? 0;
+        if (ratio > largest) { best = code; largest = ratio; }
+      }
+      reportScene(best ? audioScenes[best] : inside ? "quiet" : "ambient");
+    }
+    const sectionObserver = new IntersectionObserver(([entry]) => {
+      inside = entry.isIntersecting;
+      sync();
+    });
+    const cardObserver = new IntersectionObserver((entries) => {
       for (const entry of entries) {
         const code = (entry.target as HTMLElement).dataset.audioLanguage as Language;
         ratios.set(code, entry.intersectionRatio);
       }
-      let best: Language | null = null;
-      let score = .22;
-      for (const code of codes) {
-        const ratio = ratios.get(code) ?? 0;
-        if (ratio > score) { best = code; score = ratio; }
-      }
-      selected.current = best;
       sync();
     }, { threshold: [0, .22, .3, .4, .5, .6, .7, .8, .9, 1] });
-    for (const element of elements) observer.observe(element);
-    document.addEventListener("visibilitychange", sync);
-    return () => {
-      observer.disconnect();
-      document.removeEventListener("visibilitychange", sync);
-      playback.current?.stop();
-      playback.current = null;
-    };
-  }, [playLanguage]);
-
-  function toggleSound() {
-    enabled.current = !enabled.current;
-    setSound(enabled.current);
-    playLanguage(enabled.current ? selected.current : null);
-  }
+    sectionObserver.observe(area);
+    for (const card of area.querySelectorAll("[data-audio-language]")) cardObserver.observe(card);
+    return () => { sectionObserver.disconnect(); cardObserver.disconnect(); reportScene("ambient"); };
+  }, [reportScene]);
 
   const levelFor = (name: string) => profile?.languages.find((item) => item.name === name)?.level;
   return <section ref={section} id="idiomas" className="language-story" aria-labelledby="language-title">
     <div className="shell language-intro">
       <h2 id="language-title">Idiomas</h2>
       <p>Português · {levelFor("Português") ?? "Nativo"}</p>
-      <button className="button secondary small language-sound" type="button" aria-pressed={sound} onClick={toggleSound}>
-        {sound ? <Volume2 size={16} /> : <VolumeX size={16} />}
-        {sound ? "Desativar som / dublagem" : "Ativar Som / Dublagem"}
-      </button>
-      {blocked && <p className="muted" role="status">O navegador bloqueou a reprodução. Desative e reative o som para tentar novamente.</p>}
+      <AudioToggle />
+      <div className="language-selections" role="group" aria-label="Selecionar idioma">
+        {codes.map((code) => <button key={code} className="button secondary small" type="button" onClick={() => {
+          section.current?.querySelector(`[data-audio-language="${code}"]`)?.scrollIntoView({ block: "center" });
+        }}>{languages[code].name}</button>)}
+      </div>
     </div>
-    <audio ref={music} preload="none" loop hidden />
-    <audio ref={voice} preload="none" hidden />
     {codes.map((code) => <LanguageScene key={code} code={code} level={levelFor(languages[code].name) ?? languages[code].level} audible={audible === code} />)}
   </section>;
 }

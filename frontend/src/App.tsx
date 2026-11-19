@@ -9,6 +9,7 @@ import Career from "./components/Career";
 import Architecture from "./components/Architecture";
 import Portfolio from "./components/Portfolio";
 import { smile } from "./data/sprites";
+import { AudioToggle, SiteAudioProvider } from "./components/SiteAudio";
 
 const Notes = lazy(() => import("./components/Notes"));
 
@@ -32,6 +33,8 @@ const academyViews: Record<string, AcademyView> = {
   "#assistant": "assistant",
 };
 const sectionAnchors = new Set(["#arquitetura", "#idiomas", "#coding", "#coding-dados", "#olhar-estendido", "#projetos", "#formacao", "#calistenia", "#eventos", "#certificacoes", "#analisar-vaga", "#recora", "#planos-2027", "#videos"]);
+const siteRoutes = new Set(["/", "/arquitetura", "/academia", "/carreira", "/notes"]);
+const routePath = (pathname: string) => pathname.replace(/\/+$/, "") || "/";
 
 function AccountDialog({
   dialog,
@@ -86,7 +89,8 @@ function AccountDialog({
 }
 
 export default function App() {
-  const [hash, setHash] = useState(window.location.hash);
+  const [address, setAddress] = useState(window.location.href);
+  const { pathname, search, hash } = new URL(address);
   const [token, setToken] = useState(loadToken);
   const [workspaceVersion, setWorkspaceVersion] = useState(0);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -96,18 +100,38 @@ export default function App() {
   const dialog = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
-    function onHashChange() {
-      setHash(window.location.hash);
+    const syncAddress = () => setAddress(window.location.href);
+    function navigate(event: MouseEvent) {
+      if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
+      const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>("a[href]") : null;
+      if (!link || link.hasAttribute("download") || (link.target && link.target !== "_self")) return;
+      const url = new URL(link.href);
+      if (url.origin !== window.location.origin || !siteRoutes.has(routePath(url.pathname))) return;
+      if (url.href === window.location.href) {
+        event.preventDefault();
+        if (!url.hash) window.scrollTo(0, 0);
+        return;
+      }
+      if (url.pathname === window.location.pathname && url.search === window.location.search) return;
+      event.preventDefault();
+      window.history.pushState(null, "", url);
+      syncAddress();
     }
-    window.addEventListener("hashchange", onHashChange);
-    return () => window.removeEventListener("hashchange", onHashChange);
+    document.addEventListener("click", navigate);
+    window.addEventListener("hashchange", syncAddress);
+    window.addEventListener("popstate", syncAddress);
+    return () => {
+      document.removeEventListener("click", navigate);
+      window.removeEventListener("hashchange", syncAddress);
+      window.removeEventListener("popstate", syncAddress);
+    };
   }, []);
 
   useEffect(() => {
     const target = sectionAnchors.has(hash) ? document.getElementById(hash.slice(1)) : null;
     if (target) target.scrollIntoView();
     else window.scrollTo(0, 0);
-  }, [hash]);
+  }, [pathname, search, hash]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -143,7 +167,7 @@ export default function App() {
     dialog.current?.showModal();
   }
 
-  const path = window.location.pathname.replace(/\/+$/, "") || "/";
+  const path = routePath(pathname);
   const architecture = path === "/arquitetura";
   const academyTab = Object.hasOwn(academyViews, hash) ? academyViews[hash] : undefined;
   const academy = path === "/academia" ? academyTab ?? "tracks" : path === "/" ? academyTab : undefined;
@@ -152,7 +176,7 @@ export default function App() {
   const portfolio = !architecture && !academy && !career && !notes;
 
   return (
-    <>
+    <SiteAudioProvider>
       <svg width="0" height="0" className="sprite-filters" aria-hidden="true">
         <defs>
           <filter id="sprite-light-matte" colorInterpolationFilters="sRGB">
@@ -175,6 +199,7 @@ export default function App() {
             <a href="/carreira" aria-current={career ? "page" : undefined}><BriefcaseBusiness size={16} /> Carreira</a>
           </nav>
           <div className="header-tools flex items-center">
+            <AudioToggle header />
             <button type="button" className="button secondary account-button" onClick={token ? disconnect : signIn}>
               {token ? <LogOut size={17} /> : <LogIn size={17} />}
               {token ? "Sair" : "Entrar"}
@@ -184,7 +209,7 @@ export default function App() {
       </header>
       <main className={portfolio ? "portfolio-main" : "shell main-content"}>
         {portfolio && <Portfolio profile={profile} />}
-        {architecture && <Architecture />}
+        {architecture && <Architecture key={search} />}
         {academy && <Academy key={workspaceVersion} view={academy} token={token} onSignIn={signIn} />}
         {career && <Career key={workspaceVersion} profile={profile} token={token} onSignIn={signIn} openAnalysis={hash === "#analisar-vaga"} />}
         {notes && <Suspense fallback={<p role="status">Abrindo o caderno…</p>}><Notes /></Suspense>}
@@ -201,6 +226,6 @@ export default function App() {
         </div>
       </footer>
       <AccountDialog dialog={dialog} onConnect={(accessToken) => { sessionStorage.setItem(tokenKey, accessToken); setToken(accessToken); }} />
-    </>
+    </SiteAudioProvider>
   );
 }

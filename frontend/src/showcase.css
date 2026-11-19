@@ -178,6 +178,10 @@
 .video-form form { max-width: 635px; }
 .video-form button { margin-top: 8px; }
 .language-sound { margin-top: 9px; }
+.header-audio { white-space: nowrap; }
+.header-audio[aria-pressed="true"] { color: var(--accent); border-color: #526f36; }
+.language-selections { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+@media (max-width: 950px) { .header-audio span { display: none; } }
 .language-context .language-caption dt { color: #e5f6c0; }
 .feature-version { display: inline-flex; width: fit-content; border: 1px solid #b08858; color: #ffdda9; background: #322317; border-radius: 999px; padding: 5px 10px; font-weight: 650; font-size: .8rem; }
 .certificate-showcase { display: grid; grid-template-columns: minmax(0, 3fr) minmax(220px, 1fr); gap: 18px; margin-top: 20px; }
