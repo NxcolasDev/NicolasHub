@@ -1,12 +1,16 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
-import { ArrowUpRight, BriefcaseBusiness, Cloud, LayoutGrid, LogIn, LogOut, Orbit, X } from "lucide-react";
+import { ArrowUpRight, BriefcaseBusiness, Cloud, LayoutGrid, LogIn, LogOut, Network, NotebookPen, X } from "lucide-react";
 import { authenticate, getHealth, getProfile } from "./api";
 import type { Profile } from "./api";
 import Academy from "./components/Academy";
 import type { AcademyView } from "./components/Academy";
 import Career from "./components/Career";
+import Architecture from "./components/Architecture";
 import Portfolio from "./components/Portfolio";
+import { smile } from "./data/sprites";
+
+const Notes = lazy(() => import("./components/Notes"));
 
 const tokenKey = "nicolas-hub-token";
 const legacyTokenKey = "pylogic-token";
@@ -21,11 +25,13 @@ function loadToken() {
 
 const academyViews: Record<string, AcademyView> = {
   "#academia": "tracks",
+  "#bancos": "databases",
   "#provas": "college",
   "#terminal": "terminal",
   "#assistente": "assistant",
   "#assistant": "assistant",
 };
+const sectionAnchors = new Set(["#arquitetura", "#idiomas", "#coding", "#coding-dados", "#olhar-estendido", "#projetos", "#formacao", "#calistenia", "#eventos", "#certificacoes", "#analisar-vaga", "#recora", "#planos-2027", "#videos"]);
 
 function AccountDialog({
   dialog,
@@ -92,11 +98,16 @@ export default function App() {
   useEffect(() => {
     function onHashChange() {
       setHash(window.location.hash);
-      if (window.location.hash !== "#analisar-vaga") window.scrollTo(0, 0);
     }
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
+
+  useEffect(() => {
+    const target = sectionAnchors.has(hash) ? document.getElementById(hash.slice(1)) : null;
+    if (target) target.scrollIntoView();
+    else window.scrollTo(0, 0);
+  }, [hash]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -132,39 +143,60 @@ export default function App() {
     dialog.current?.showModal();
   }
 
-  const academy = Object.hasOwn(academyViews, hash) ? academyViews[hash] : undefined;
-  const career = hash === "#carreira" || hash === "#analisar-vaga";
-  const portfolio = !academy && !career;
+  const path = window.location.pathname.replace(/\/+$/, "") || "/";
+  const architecture = path === "/arquitetura";
+  const academyTab = Object.hasOwn(academyViews, hash) ? academyViews[hash] : undefined;
+  const academy = path === "/academia" ? academyTab ?? "tracks" : path === "/" ? academyTab : undefined;
+  const career = path === "/carreira" || (path === "/" && (hash === "#carreira" || hash === "#analisar-vaga"));
+  const notes = path === "/notes";
+  const portfolio = !architecture && !academy && !career && !notes;
 
   return (
     <>
+      <svg width="0" height="0" className="sprite-filters" aria-hidden="true">
+        <defs>
+          <filter id="sprite-light-matte" colorInterpolationFilters="sRGB">
+            <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  -21.25 -21.25 -21.25 0 62.5" result="matte" />
+            <feComposite in="SourceGraphic" in2="matte" operator="in" />
+          </filter>
+        </defs>
+      </svg>
       <header className="topbar no-print">
-        <div className="shell header-inner">
-          <a href="#portfolio" className="brand" aria-label="Nicolas Hub — página inicial"><span className="brand-icon"><Orbit size={24} /></span><strong>Nicolas<span>Hub</span></strong></a>
+        <div className="shell header-inner flex items-center justify-between">
+          <a href="/" className="brand" aria-label="Nicolas Hub — página inicial">
+            <img className="brand-sprite" src={smile} alt="" />
+            <strong>Nicolas<span>Hub</span></strong>
+          </a>
           <nav className="main-nav" aria-label="Navegação principal">
-            <a href="#portfolio" aria-current={portfolio ? "page" : undefined}><LayoutGrid size={17} /> Portfólio</a>
-            <a href="#academia" aria-current={academy ? "page" : undefined}><Cloud size={18} /> Academia</a>
-            <a href="#carreira" aria-current={career ? "page" : undefined}><BriefcaseBusiness size={17} /> Carreira</a>
+            <a href="/" aria-current={portfolio ? "page" : undefined}><LayoutGrid size={16} /> Portfólio</a>
+            <a href="/arquitetura" aria-current={architecture ? "page" : undefined}><Network size={16} /> Arquitetura</a>
+            <a href="/academia" aria-current={academy ? "page" : undefined}><Cloud size={16} /> Academia</a>
+            <a href="/notes" aria-current={notes ? "page" : undefined}><NotebookPen size={16} /> Notes</a>
+            <a href="/carreira" aria-current={career ? "page" : undefined}><BriefcaseBusiness size={16} /> Carreira</a>
           </nav>
-          <button type="button" className="button secondary account-button" onClick={token ? disconnect : signIn}>
-            {token ? <LogOut size={17} /> : <LogIn size={17} />}
-            {token ? "Sair" : "Entrar"}
-          </button>
+          <div className="header-tools flex items-center">
+            <button type="button" className="button secondary account-button" onClick={token ? disconnect : signIn}>
+              {token ? <LogOut size={17} /> : <LogIn size={17} />}
+              {token ? "Sair" : "Entrar"}
+            </button>
+          </div>
         </div>
       </header>
-      <main className="shell main-content">
+      <main className={portfolio ? "portfolio-main" : "shell main-content"}>
         {portfolio && <Portfolio profile={profile} />}
+        {architecture && <Architecture />}
         {academy && <Academy key={workspaceVersion} view={academy} token={token} onSignIn={signIn} />}
-        {career && <Career key={workspaceVersion} profile={profile} token={token} onSignIn={signIn} />}
+        {career && <Career key={workspaceVersion} profile={profile} token={token} onSignIn={signIn} openAnalysis={hash === "#analisar-vaga"} />}
+        {notes && <Suspense fallback={<p role="status">Abrindo o caderno…</p>}><Notes /></Suspense>}
         {profileError && (portfolio || career) && (
-          <div className="actions no-print" role="status"><p className="muted">Dados do perfil indisponíveis.</p>
+          <div className={portfolio ? "shell actions profile-retry no-print" : "actions no-print"} role="status"><p className="muted">Dados do perfil indisponíveis.</p>
             <button type="button" className="button secondary" onClick={() => setLoadAttempt((current) => current + 1)}>Recarregar perfil</button>
           </div>
         )}
       </main>
       <footer className="footer no-print">
         <div className="shell footer-inner">
-          <a href="#portfolio">Nicolas Hub <ArrowUpRight size={15} /></a>
+          <a href="/">Nicolas Hub <ArrowUpRight size={15} /></a>
           <span className={`api-status ${health}`}><i />{health === "online" ? "API disponível" : health === "offline" ? "API indisponível" : "Conectando à API"}</span>
         </div>
       </footer>

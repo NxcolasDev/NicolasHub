@@ -1,4 +1,10 @@
 {
+  "rewrites": [
+    { "source": "/arquitetura", "destination": "/index.html" },
+    { "source": "/academia", "destination": "/index.html" },
+    { "source": "/carreira", "destination": "/index.html" },
+    { "source": "/notes", "destination": "/index.html" }
+  ],
   "headers": [
     {
       "source": "/(.*)",
