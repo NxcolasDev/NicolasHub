@@ -64,6 +64,13 @@ export interface StudyMaterial {
   flashcards: { front: string; back: string }[];
 }
 
+export interface CodingGuidance {
+  scenario: string;
+  input_hint: string;
+  strategy_hint: string;
+  complexity_hint: string;
+}
+
 export interface CareerAdvice {
   role: string;
   fit_summary: string;
@@ -195,8 +202,12 @@ function postWithToken<T>(path: string, token: string, payload: object): Promise
   });
 }
 
-export function getStudyMaterial(topic: Topic, notes: string, count: number, token: string) {
-  return postWithToken<StudyMaterial>("/api/v1/study/generate", token, { topic, notes, count });
+export function getStudyMaterial(topic: Topic, notes: string, count: number, token: string, previousPrompts: string[] = []) {
+  return postWithToken<StudyMaterial>("/api/v1/study/generate", token, { topic, notes, count, previous_prompts: previousPrompts });
+}
+
+export function getCodingGuidance(missionId: string, token: string) {
+  return postWithToken<CodingGuidance>("/api/v1/study/coding-mission", token, { mission_id: missionId });
 }
 
 export function tailorCareer(description: string, companyId: string, token: string) {
