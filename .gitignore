@@ -24,3 +24,4 @@ build/
 !*.tfvars.example
 node_modules/
 frontend/dist/
+frontend/public/python-runtime/

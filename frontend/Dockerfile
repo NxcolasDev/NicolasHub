@@ -4,6 +4,7 @@ WORKDIR /workspace
 COPY package*.json ./
 RUN npm ci
 COPY index.html vite.config.ts tsconfig.json ./
+COPY scripts/sync-python.mjs ./scripts/
 COPY src/ ./src/
 COPY public/ ./public/
 RUN npm run build
