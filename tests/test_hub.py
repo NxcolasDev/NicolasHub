@@ -93,11 +93,14 @@ def test_study_and_career_are_authenticated_and_validate_provider_data(
 
     class FakeAssistant:
         async def structured(self, prompt, instruction, schema):
-            if schema.__name__ == "StudyMaterial":
+            if schema.__name__ == "StudyBatch":
                 return schema.model_validate(
                     {
                         "summary": "Revisão de serviços.",
-                        "questions": [question] * 3,
+                        "questions": [
+                            {**question, "prompt": f"{question['prompt']} Cenário {i}."}
+                            for i in range(3)
+                        ],
                         "flashcards": [{"front": "Pergunta", "back": "Resposta"}] * 3,
                     }
                 )
@@ -130,6 +133,81 @@ def test_study_and_career_are_authenticated_and_validate_provider_data(
     job["company_id"] = "not-in-the-guide"
     assert (
         client.post("/api/v1/career/tailor", json=job, headers=headers).status_code
+        == 422
+    )
+
+
+def test_study_builds_25_distinct_questions_and_excludes_previous(
+    client: TestClient,
+) -> None:
+    import json
+
+    class FakeAssistant:
+        async def structured(self, prompt, _instruction, schema):
+            request = json.loads(prompt)
+            assert request["count"] <= 8
+            assert (
+                schema.model_json_schema()["properties"]["questions"]["maxItems"] == 8
+            )
+            earlier = request["previous_prompts"]
+            choices = ["A", "B", "C", "D"]
+            questions = [
+                {
+                    "prompt": f"{request['focus']}: questão {i}",
+                    "options": choices,
+                    "correct_index": 0,
+                    "explanations": choices,
+                }
+                for i in range(request["count"])
+            ]
+            if schema.__name__ == "StudyBatch":
+                questions[0]["prompt"] = earlier[0].upper() + "!"
+            return schema.model_validate(
+                {
+                    "summary": "Resumo",
+                    "questions": questions,
+                    "flashcards": [{"front": "Pergunta", "back": "Resposta"}] * 3,
+                }
+            )
+
+    headers = _login(client)
+    app.dependency_overrides[get_structured_assistant] = FakeAssistant
+    response = client.post(
+        "/api/v1/study/generate",
+        json={"topic": "college", "previous_prompts": ["Pergunta antiga"]},
+        headers=headers,
+    )
+    assert response.status_code == 200
+    prompts = {item["prompt"] for item in response.json()["questions"]}
+    assert len(prompts) == 25
+    assert "PERGUNTA ANTIGA!" not in prompts
+
+
+def test_coding_mission_uses_only_catalogued_exercises(client: TestClient) -> None:
+    path = "/api/v1/study/coding-mission"
+    payload = {"mission_id": "media-movel"}
+    assert client.post(path, json=payload).status_code == 401
+    headers = _login(client)
+
+    class FakeAssistant:
+        async def structured(self, prompt, instruction, schema):
+            assert '"level": "intermediário"' in prompt
+            assert "solve(data)" in instruction
+            return schema(
+                scenario="Calcule a média das leituras de sensores.",
+                input_hint="Use os campos values e window.",
+                strategy_hint="Aproveite a soma da janela anterior.",
+                complexity_hint="Percorra os dados uma vez.",
+            )
+
+    app.dependency_overrides[get_structured_assistant] = FakeAssistant
+    response = client.post(path, json=payload, headers=headers)
+    assert response.status_code == 200
+    assert response.json()["strategy_hint"] == "Aproveite a soma da janela anterior."
+    assert (
+        client.post(
+            path, json={"mission_id": "desconhecida"}, headers=headers
+        ).status_code
         == 422
     )
 
