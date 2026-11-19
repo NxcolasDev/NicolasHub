@@ -1,239 +1,179 @@
-<div align="center">
+# Nicolas Hub
 
-<h1>Nicolas Hub</h1>
-<p>Portfólio, academia cloud e preparação de carreira de Nicolas de Jesus Silva.</p>
+Portfólio técnico, academia de Cloud e Dados e preparação de carreira de Nicolas de Jesus Silva. A interface reúne projetos, certificações, notas de estudo e uma demonstração de arquitetura multicloud.
 
-[![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-API-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
-[![Tests](https://img.shields.io/badge/Tests-pytest-0A9EDC?logo=pytest&logoColor=white)](https://pytest.org/)
-</div>
+## O que o Hub oferece
 
-## Visão geral
+| Área | Recursos |
+| --- | --- |
+| Portfólio | Projetos com capas e vídeos, TCC RECORA em desenvolvimento, idiomas com dublagem, eventos, certificações e roadmap de 2027 |
+| Arquitetura | Topologia interativa, fluxo de telemetria entre GCP e AWS, integração com Gemini e vídeos por projeto |
+| Academia | Trilhas técnicas, provas com anotações ou PDFs com texto selecionável, simulados de 15, 25 ou 30 questões e flashcards |
+| Coding Gym | Editor Python com execução no navegador, casos de teste e rastreamento de valores por linha |
+| Notes | Pastas e folhas em Markdown, exemplos de leitura pública e links compartilháveis |
+| Carreira | Guia das 15 empresas da Job Fair Google Cloud de 02/12/2026, análise de vagas e currículo copiável, exportável em HTML ou imprimível em PDF |
 
-O Nicolas Hub reúne a vitrine de projetos e credenciais, a academia de Cloud e
-Dados, a revisão para provas e o painel da Job Fair Google Cloud de 02/12/2026.
-O treino de lógica e os simulados iniciais funcionam sem Gemini. Com uma conta,
-o Gemini gera resumos, flashcards, simulados com feedback por alternativa e
-uma análise de vaga. O currículo é renderizado em HTML com os dados do perfil
-mestre e pode ser salvo em PDF pela impressão do navegador.
+O material introdutório, o Coding Gym e o portfólio podem ser explorados sem
+login. A geração de conteúdo com Gemini exige uma conta e a chave configurada
+na API. Edições do Notes, vídeos cadastrados e certificados adicionados pela
+interface ficam no navegador.
 
-## Arquitetura
+## Arquitetura multicloud
 
-O desenho AWS + GCP, as permissões e a ordem para provisionar os recursos
-estão no [guia de arquitetura multicloud](docs/arquitetura-multicloud.md).
-
-```text
-[React/Vite / Swagger] --REST--> [FastAPI: JWT, academia, carreira e analytics]
-[CLI Python src/] -------------> [Motor de lógica]
-[FastAPI] ----------------------> [PostgreSQL: usuários, eventos e cotas]
-[FastAPI] ----------------------> [AWS SQS opcional: Terraform]
-[FastAPI] ----------------------> [Gemini: assistente e geração estruturada]
+```mermaid
+flowchart LR
+  U["Navegador"] --> UI["React + Vite"]
+  UI -->|HTTPS| API["FastAPI · Cloud Run"]
+  API -->|TLS| DB[("Neon · PostgreSQL")]
+  API -->|Geração estruturada| AI["Gemini API"]
+  API -->|Identidade OIDC do GCP| STS["AWS STS"]
+  STS -->|Credenciais temporárias| API
+  API -->|Telemetria| SQS["Amazon SQS"]
+  SQS -.->|Redrive quando houver consumidor| DLQ["SQS · DLQ"]
+  JOB["Cloud Run Job · Alembic"] -->|Migrações| DB
+  SM["Secret Manager"] --> API
+  SM --> JOB
 ```
 
-## Requisitos
+- **Cloud Run** executa a API FastAPI a partir de uma imagem no Artifact
+  Registry. Um Cloud Run Job aplica migrações antes de liberar tráfego.
+- **Neon PostgreSQL** armazena usuários, eventos e cotas compartilhadas. A API
+  usa alembic para versionar o esquema.
+- **AWS SQS** recebe telemetria. A conta de serviço do Cloud Run usa um token
+  OIDC e a role AWS fornece credenciais temporárias por STS. A DLQ fica
+  disponível para redrive quando houver um consumidor conectado.
+- **Gemini** gera material de estudo e análises de vagas no backend. O FastAPI
+  valida as respostas estruturadas e as seleções usadas no currículo.
+- **Terraform** define o serviço e o job no GCP, a fila SQS, a DLQ e a federação
+  de identidade. A interface pode ser publicada separadamente na Vercel.
 
-- Docker com Docker Compose v2 para execução completa.
-- Python 3.12+ e PostgreSQL acessível para execução local sem Docker.
-- Terraform 1.5+ e credenciais AWS fornecidas pelo ambiente (apenas para
-  provisionar a fila).
+O Pub/Sub exibido no diagrama interativo é uma alternativa de referência para
+mensageria. O caminho de telemetria provisionado usa SQS. O provisionamento
+completo, as permissões e a sequência de migração estão no
+[guia de arquitetura multicloud](docs/arquitetura-multicloud.md).
 
-## Executar com Docker Compose
+## Executar localmente com Docker
 
-1. Copie `.env.example` para `.env` e substitua todos os valores `MOCK_ONLY`
-por valores locais fortes para
-`POSTGRES_PASSWORD` e `JWT_SECRET_KEY` (pelo menos 32 caracteres). Uma chave
-pode ser gerada com `python -c "import secrets; print(secrets.token_urlsafe(48))"`.
-2. Inicialize os serviços a partir da raiz:
+Requisitos: Docker com Compose v2. Execute os comandos na raiz do checkout.
 
 ```powershell
+Copy-Item .env.example .env
+```
+
+Substitua `POSTGRES_PASSWORD` e `JWT_SECRET_KEY` no `.env` por valores locais
+fortes. Para gerar uma chave JWT aleatória com Python:
+
+```powershell
+python -c "import secrets; print(secrets.token_urlsafe(48))"
 docker compose up --build
 ```
 
-Compose lê `.env` para interpolar configurações. Mantenha o arquivo local.
-A API aguarda o healthcheck do PostgreSQL e executa `alembic upgrade head`
-antes de iniciar.
-3. Acesse a documentação interativa em <http://localhost:8000/docs> e a
-verificação de saúde em <http://localhost:8000/health>.
-4. Finalize com `docker compose down`. Os dados permanecem no volume nomeado.
+O Compose inicia PostgreSQL, aplica as migrações com Alembic e sobe a API e o
+frontend. Acesse o [Hub](http://localhost:3000), o
+[Swagger](http://localhost:8000/docs) e a [saúde da API](http://localhost:8000/health).
+Para parar os serviços, use `docker compose down`. Os dados permanecem no
+volume nomeado.
 
-O `.env.example` contém exclusivamente placeholders fictícios e não são
-credenciais. O `.env` local é ignorado pelo Git; nunca o versione nem reutilize
-esses mocks em ambientes reais.
+| Configuração | Uso |
+| --- | --- |
+| `GEMINI_API_KEY` ou `AI_API_KEY` | Habilita geração de material, assistência e análise de vagas |
+| `AI_MODEL`, `AI_TIMEOUT_SECONDS` | Ajustam o modelo Gemini e o tempo limite da chamada |
+| `AWS_REGION`, `SQS_QUEUE_URL` | Habilitam a publicação de telemetria na fila |
+| `FRONTEND_ORIGINS` | Define origens permitidas no CORS quando a API tem domínio separado |
+| `DATABASE_URL` | Define a conexão da API em execução fora do Compose |
 
-Para publicar telemetria na SQS, configure `AWS_REGION` e `SQS_QUEUE_URL` no
-`.env`. Em desenvolvimento local, o SDK pode receber `AWS_ACCESS_KEY_ID`,
-`AWS_SECRET_ACCESS_KEY` e `AWS_SESSION_TOKEN` do ambiente. Em produção, prefira
-IAM Roles/credenciais temporárias. Sem `SQS_QUEUE_URL`, a API ainda armazena os
-eventos no PostgreSQL.
+O `.env.example` contém valores de demonstração. Mantenha o `.env` e as
+credenciais fora do Git. Em produção, configure os segredos no Secret Manager
+e use identidade federada para publicar na AWS.
 
-O assistente opcional usa a API REST Gemini por `GEMINI_API_KEY` (ou `AI_API_KEY`
-como alias), `AI_MODEL` e `AI_TIMEOUT_SECONDS`. O valor padrão de modelo é
-`gemini-3.5-flash-lite`. A chave só é enviada pelo backend ao Google. Use um secret
-manager em produção. Quando não configurado, `/api/v1/learning/assistant`
-responde `503` explicitamente. O endpoint requer usuário autenticado. Não envie
-segredos, dados pessoais ou informações confidenciais em prompts.
+### Desenvolvimento sem Docker
 
-## Frontend
-
-A interface React/Vite está em <http://localhost:3000>. Para desenvolvimento
-separado, inicie a API e execute os comandos abaixo na pasta `frontend`.
-
-```sh
-npm ci
-npm run dev
-npm run build
-```
-
-O Vite encaminha `/api` e `/health` para `127.0.0.1:8000`. O manifesto dos
-ativos é gerado por `node scripts/import_assets.mjs` na raiz, usando os nomes
-de arquivo em `base/`. O build usa as cópias de `frontend/public/assets/`.
-Os dois currículos e o guia da feira ficam em `base/`. Os registros curados
-estão em `backend/app/data/profile.json` e `backend/app/data/job_fair.json`.
-O painel usa os contatos profissionais do guia com endereço inequívoco.
-
-## Deploy e migração
-
-- No Neon, use uma conexão PostgreSQL com TLS. Na API, configure `DATABASE_URL`
-  com o esquema `postgresql+psycopg://`. Rode `alembic upgrade head` na imagem
-  do backend durante o release, antes de receber tráfego. A revisão `0002`
-  cria a tabela de cotas compartilhada.
-- No Render ou Cloud Run, publique a imagem de `backend/Dockerfile` com a raiz
-  como contexto. Configure `APP_ENVIRONMENT=production`, `JWT_SECRET_KEY`,
-  `DATABASE_URL` e, para habilitar a IA, `GEMINI_API_KEY`. O servidor usa
-  `${PORT:-8000}`. O cadastro público é fechado por padrão em produção.
-  Use `PUBLIC_REGISTRATION=true` se quiser permitir criações de conta.
-- Na Vercel, use `frontend` como diretório raiz, `npm run build` e saída `dist`.
-  Configure `VITE_API_BASE_URL` com a URL HTTPS pública da API e inclua a origem
-  exata da Vercel em `FRONTEND_ORIGINS` no backend. Com um proxy de mesma
-  origem, use URLs relativas. Para cotas por IP atrás de proxy, configure
-  `FORWARDED_ALLOW_IPS` com os endereços ou redes confiáveis do ingress.
-- Em uma instalação Compose existente, preserve o volume e os valores atuais
-  de `POSTGRES_DB`, `POSTGRES_USER` e `DATABASE_URL` até migrar os dados e o
-  usuário de forma explícita. Se a pasta do projeto mudar, use o nome do
-  projeto Compose anterior para reutilizar o volume. O SQLite legado continua
-  utilizável até a cópia ou renomeação explícita do arquivo local.
-- Em um ambiente AWS existente, mantenha o `queue_name` implantado por variável
-  até coordenar a troca de fila principal, DLQ e `SQS_QUEUE_URL`. Revise
-  `terraform plan` antes de aplicar alterações de nome.
-- Para trocar o slug do repositório, renomeie-o no GitHub e atualize
-  `origin` para a URL do novo slug antes de renomear o checkout local.
-
-## Execução local
-
-Crie um ambiente virtual, instale as dependências e exporte `DATABASE_URL` e
-`JWT_SECRET_KEY`. O endereço de banco deve usar o driver `psycopg`, por exemplo:
+Use Python 3.12+, Node.js 22 e uma instância PostgreSQL acessível. Configure
+`DATABASE_URL` com o esquema `postgresql+psycopg://` e `JWT_SECRET_KEY`, por
+exemplo no `.env`. Em um terminal na raiz:
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-$env:DATABASE_URL = "postgresql+psycopg://usuario:senha@localhost:5432/nicolas_hub"
-$env:JWT_SECRET_KEY = python -c "import secrets; print(secrets.token_urlsafe(48))"
 alembic -c backend/alembic.ini upgrade head
 uvicorn app.main:app --app-dir backend --reload
 ```
 
-As migrações devem ser aplicadas antes de iniciar a API. Os dados de conexão e
-segredos são configuração do ambiente, não valores padrão no código.
-
-## API
-
-- `POST /api/v1/auth/register`: cria usuário; corpo `{"email":"...","password":"..."}`.
-- `POST /api/v1/auth/login`: recebe formulário OAuth2 (`username` e `password`)
-  e retorna um token Bearer.
-- `POST /api/v1/analytics/events`: registra evento autenticado.
-- `GET /api/v1/analytics/events`: lista eventos do usuário; aceita `severity`,
-  `created_after`, `created_before`, `limit` e `offset`.
-- `GET /api/v1/analytics/summary`: agrega contagens por severidade para o usuário.
-- `POST /api/v1/learning/logic`: executa exercício de média móvel ou logs críticos.
-- `POST /api/v1/learning/assistant`: pergunta educacional para adapter Gemini
-  opcional, com limite de tamanho e autenticação.
-- `GET /api/v1/hub/profile` e `GET /api/v1/hub/job-fair` servem o portfólio e o guia.
-- `POST /api/v1/study/generate` gera uma revisão por trilha com Gemini.
-- `POST /api/v1/career/tailor` cruza a vaga com o perfil mestre e a empresa opcional.
-
-## Banco e índices
-
-Alembic versiona o esquema, evitando alterações implícitas no startup.
-Analytics combina `JOIN` entre eventos e usuários para limitar os resultados
-ao usuário autenticado, e usa `COUNT`/`GROUP BY` para agregar por severidade.
-Índices em `severity` e `created_at` aceleram filtros frequentes; o índice
-composto por usuário/data ajuda a paginação e os filtros de intervalo.
-
-## Testes
+Em outro terminal, configure o frontend:
 
 ```powershell
-pytest
+cd frontend
+npm ci
+npm run dev
 ```
 
-Os testes de API usam SQLite temporário e substituem a dependência de banco,
-sem exigir um PostgreSQL em execução. A suíte também protege o comportamento
-existente da CLI/motor de lógica.
+O servidor Vite usa a porta 3000 e encaminha `/api` e `/health` para a API na
+porta 8000. `npm run build` gera o artefato em `frontend/dist`.
 
-## Terraform (AWS SQS modular)
+## Publicação
+
+1. Configure o banco Neon com TLS e cadastre `DATABASE_URL`,
+   `JWT_SECRET_KEY` e `GEMINI_API_KEY` no Secret Manager.
+2. Siga o [guia Terraform AWS e GCP](docs/arquitetura-multicloud.md) e revise
+   os planos de `terraform/` e `terraform/gcp/` antes de aplicar mudanças.
+3. Publique a imagem do `backend/Dockerfile` no Artifact Registry, execute
+   o job de migração e configure as origens HTTPS autorizadas.
+4. Na Vercel, use `frontend` como diretório raiz, `npm run build` como comando e
+   `dist` como saída. Aponte `VITE_API_BASE_URL` para a URL da API Cloud Run.
+5. Verifique `/health`, publique um evento autenticado e confira a mensagem na
+   fila. Cadastros públicos ficam fechados por padrão em produção.
+
+## Personalização e mídia
+
+- [Links profissionais e repositórios](frontend/src/config/profileLinks.ts)
+- [Perfil mestre](backend/app/data/profile.json) e
+  [empresas da feira](backend/app/data/job_fair.json)
+- Capas de projetos em `frontend/public/assets/projetos/` e GIFs em
+  `frontend/public/assets/Animacoes/`.
+- Trilhas e dublagens em `frontend/public/assets/audios/`. **Música / Áudio**
+  começa desligado e acompanha a navegação interna após a ativação. A trilha
+  global pausa durante Idiomas, e as falas acompanham as legendas do cartão.
+- O painel de vídeos em `/arquitetura#videos` aceita links do YouTube por
+  projeto. Os vídeos cadastrados na interface ficam no navegador atual.
+
+### Capturas e vídeo de demonstração
+
+| Material | Local previsto | Conteúdo |
+| --- | --- | --- |
+| Captura do Portfólio | `docs/media/portfolio.png` | Hero, projetos e idiomas |
+| Captura de Arquitetura | `docs/media/arquitetura.png` | Topologia multicloud e fluxo de eventos |
+| Captura da Academia | `docs/media/academia.png` | Simulado e Coding Gym |
+| Vídeo de demonstração | Link não listado do YouTube a adicionar | Navegação guiada, arquitetura e exemplos de estudo |
+
+## Qualidade e manutenção
 
 ```powershell
-cd terraform
-terraform init
-terraform fmt -recursive
-terraform validate
-terraform plan -var="aws_region=us-east-1"
-terraform apply -var="aws_region=us-east-1"
-terraform output queue_url
+pytest -q
+python -m black --check backend/app src tests
+python -m flake8 backend/app src tests
 ```
 
-O módulo reutilizável está em `terraform/modules/sqs`; a raiz compõe a fila de
-telemetria e DLQ. Inputs/outputs facilitam criar recursos com configuração
-consistente sem duplicar recursos. O provider AWS segue a cadeia padrão de
-credenciais; nunca coloque chaves no código Terraform. O backend local é o
-padrão do Terraform, portanto configure um backend remoto e um `key` distinto
-por ambiente antes de compartilhar/operar infraestrutura.
+A suíte usa SQLite temporário, com substituição do provedor Gemini em testes
+de contrato. Os fluxos do GitHub Actions também validam a infraestrutura e os
+títulos dos commits em pull requests. Use Conventional Commits, como
+`feat(academy): add PDF study notes` ou `docs: update deployment guide`.
 
-## Fluxo Git e Conventional Commits
+Consulte o [guia mestre de estudos](docs/STUDY_GUIDE.md), o
+[guia de SQL e NoSQL](docs/databases_guide.md), o
+[guia de Cloud e Terraform](docs/cloud_and_terraform.md) e o
+[guia de Python](docs/python_mastery.md).
 
-- `main` contém código integrado e revisado; não faça push direto.
-- `feature/<nome-curto>` implementa evolução, por exemplo
-  `feature/learning-assistant`.
-- `hotfix/<nome-curto>` corrige produção com escopo mínimo e revisão urgente.
-- Abra Pull Request para `main`; CI executa testes, Black, Flake8 e valida os
-  títulos de todos os commits da PR.
-- Use commits como `feat(api): add learning assistant`, `fix(auth): reject
-  expired token`, `docs: explain database indexes`, `chore(ci): pin toolchain`
-  e `test: cover learner isolation`.
-- Execute `bash scripts/conventional_commit.sh` para montar uma mensagem ou
-  `bash scripts/deploy_check.sh` antes de uma promoção de ambiente.
-
-## Referências oficiais
-
-- [Python](https://docs.python.org/3/)
-- [FastAPI](https://fastapi.tiangolo.com/)
-- [Docker Compose](https://docs.docker.com/compose/)
-- [PostgreSQL](https://www.postgresql.org/docs/)
-- [Terraform](https://developer.hashicorp.com/terraform/docs)
-- [AWS SQS](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/welcome.html)
-- [Google Cloud](https://cloud.google.com/docs)
-
-## Guias de estudo
-
-- [Arquitetura e tecnologias](docs/architecture_and_tech.md)
-- [SQL e NoSQL](docs/databases_guide.md)
-- [Cloud e Terraform](docs/cloud_and_terraform.md)
-- [Python do básico ao avançado](docs/python_mastery.md)
-- [Guia mestre integrado de estudos](docs/STUDY_GUIDE.md)
-
-## Estrutura principal
+## Estrutura do repositório
 
 ```text
-backend/app/       API, configuração, domínio, serviços e rotas
-backend/migrations/ Migrações Alembic
-frontend/          Aplicação React/Vite e Nginx
-terraform/         Fila SQS e variáveis AWS
-terraform/modules/ Módulos IaC reutilizáveis
-docs/              Guias técnicos e trilhas de estudo
-scripts/           Checagens locais de commit e deploy
-.github/workflows/ CI para pull requests
-tests/             Testes da CLI e da API
-src/               Motor/CLI Python existente
+backend/app/        API, perfil mestre, rotas e integrações
+backend/migrations/ Migrações do PostgreSQL com Alembic
+frontend/src/       React, estilos, páginas e console interativo
+frontend/public/    GIFs, imagens e áudio servido no navegador
+src/                Motor Python e CLI de exercícios
+terraform/          AWS SQS, DLQ e federação de identidade
+terraform/gcp/      Cloud Run, Artifact Registry e Secret Manager
+docs/               Arquitetura e guias de estudo
+tests/              Testes de contratos da API e do motor Python
 ```
