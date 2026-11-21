@@ -12,5 +12,5 @@ COPY src/ /app/src/
 RUN useradd --create-home hub && chown hub /app
 USER hub
 
-EXPOSE 8000
-CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port \"${PORT:-8000}\""]
+EXPOSE 8080
+CMD ["sh", "-c", "if [ \"${RUN_MIGRATIONS:-false}\" = true ]; then alembic upgrade head || exit 1; fi; exec uvicorn app.main:app --host 0.0.0.0 --port \"${PORT:-8080}\""]

@@ -23,7 +23,7 @@ locals {
     "secretmanager.googleapis.com",
   ])
   database_secrets = toset(["DATABASE_URL", "JWT_SECRET_KEY"])
-  runtime_secrets  = setunion(local.database_secrets, toset(["GEMINI_API_KEY"]))
+  runtime_secrets  = toset(keys(var.secret_versions))
   api_env = merge(
     {
       APP_ENVIRONMENT     = "production"
@@ -138,7 +138,7 @@ resource "google_cloud_run_v2_service" "api" {
       image = var.api_image
 
       ports {
-        container_port = 8000
+        container_port = var.container_port
       }
 
       dynamic "env" {

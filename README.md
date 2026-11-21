@@ -54,7 +54,7 @@ Projetos com capas e vídeos, certificações, idiomas, eventos e roadmap de 202
 
 <img src="docs/midias/Screenshot%202026-11-19%20121202.png" alt="Projeto RECORA" width="100%" />
 
-Sistema inteligente de gestão de estoque desenvolvido em equipe na UniFAAT, em desenvolvimento ativo. Propõe controle de entradas e saídas, rastreamento de movimentações e redução de perdas, com **React, Vite, Tailwind CSS, Node.js, Express, PostgreSQL, Docker, Amazon ECR e ECS**.
+Plataforma em desenvolvimento na UniFAAT para organizar o processo comercial de empresas que vendem planos de saúde. Centraliza cadastro de leads, funil, histórico de interações, follow-ups e reativação de oportunidades, com validação de CNPJ via BrasilAPI. A stack inclui **React, TypeScript, Vite, Python, FastAPI, SQLAlchemy, PostgreSQL, Docker, AWS S3, Amazon ECR, Amazon ECS / Fargate, Terraform, Prometheus, Grafana e Ollama**.
 
 </details>
 
@@ -244,7 +244,47 @@ tests/              Testes de contrato da API e motor Python
 
 **Configuração:** [Links profissionais](frontend/src/config/profileLinks.ts) · [Perfil mestre](backend/app/data/profile.json) · [Empresas da Job Fair](backend/app/data/job_fair.json)
 
-**Mídia:** capas em `frontend/public/assets/projetos/`, animações em `frontend/public/assets/Animacoes/` e áudios em `frontend/public/assets/audios/`. O botão **Música / Áudio** começa desligado; após ativação, acompanha a navegação interna. A trilha global pausa durante Idiomas e as falas acompanham as legendas. O painel `/arquitetura#videos` aceita links YouTube por projeto; vídeos cadastrados ficam no navegador atual.
+**Mídia:** capas em `frontend/public/assets/projetos/`, animações em `frontend/public/assets/Animacoes/` e quatro gravações autorais em `frontend/public/assets/audios/`. Cada idioma tem um controle para ouvir ou pausar a gravação com legendas. Os vídeos cadastrados pela administração ficam no navegador atual.
+
+### Demonstração pública em planos gratuitos
+
+O Blueprint [render.yaml](render.yaml) seleciona uma instância **Free** para
+FastAPI em container. Use um projeto **Neon Free**, com `DATABASE_URL` no formato
+`postgresql+psycopg://…?sslmode=require`. O container usa `PORT` (padrão 8080) e
+aplica as migrações quando `RUN_MIGRATIONS=true`. Na Vercel Hobby, aponte o
+diretório raiz para `frontend` e defina somente `VITE_API_BASE_URL` com a URL
+HTTPS do backend. Configure `FRONTEND_ORIGINS` com a origem HTTPS exata do
+frontend. Koyeb Free pode executar a mesma imagem e configuração.
+
+Deixe `SQS_QUEUE_URL`, `AWS_SQS_ROLE_ARN` e `AWS_WEB_IDENTITY_AUDIENCE` vazias
+para a demonstração. A telemetria autorizada é gravada no PostgreSQL e
+responde `200 OK` com `status: SIMULATED_CLOUD_EVENT` e os campos do evento.
+O mesmo retorno preserva o evento quando a publicação na fila configurada
+falha. O Terraform serve como referência implantável e pode ser validado
+sem criar recursos.
+
+Para manter a demonstração dentro das franquias gratuitas, monitore o consumo
+e confira o comportamento da conta ao atingir os limites. Render Free pode
+suspender serviços e, conforme a configuração da conta, cobrar consumo
+excedente. Os planos de demonstração também podem ter suspensão por inatividade.
+[Render Free](https://render.com/docs/free) · [Vercel Hobby](https://vercel.com/docs/plans/hobby) · [Neon Free](https://neon.com/pricing)
+
+### Administração e modo leitura
+
+Visitantes podem ler o conteúdo público e usar atividades executadas no
+navegador. Todas as rotas de escrita da API exigem a chave administrativa ou
+uma sessão administrativa assinada. Com `ADMIN_SECRET_KEY` ausente, as
+operações de escrita ficam desabilitadas. Insira o segredo aleatório de pelo
+menos 32 caracteres no `.env` local ou no painel de segredos do host. A chave
+só é enviada ao FastAPI como `X-Admin-Key` durante a autenticação pela interface.
+
+Para criar a primeira conta administrativa, habilite temporariamente
+`PUBLIC_REGISTRATION=true` no backend e envie `POST /api/v1/auth/register`
+com o cabeçalho `X-Admin-Key` e o JSON de e-mail e senha. Depois restaure
+`PUBLIC_REGISTRATION=false`. Use **Admin** no cabeçalho para entrar com a
+conta e a chave. A sessão expira e a troca da chave invalida tokens
+administrativos anteriores. Habilite Gemini à parte, com a credencial
+restrita ao servidor e dentro da franquia da conta.
 
 **Testes e lint:**
 

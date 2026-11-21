@@ -38,10 +38,22 @@ variable "secret_versions" {
 
   validation {
     condition = (
-      toset(keys(var.secret_versions)) == toset(["DATABASE_URL", "JWT_SECRET_KEY", "GEMINI_API_KEY"])
+      length(setsubtract(toset(["DATABASE_URL", "JWT_SECRET_KEY"]), toset(keys(var.secret_versions)))) == 0
+      && length(setsubtract(toset(keys(var.secret_versions)), toset(["DATABASE_URL", "JWT_SECRET_KEY", "GEMINI_API_KEY", "ADMIN_SECRET_KEY"]))) == 0
       && alltrue([for version in values(var.secret_versions) : can(regex("^[1-9][0-9]*$", version))])
     )
-    error_message = "Informe versões numéricas para DATABASE_URL, JWT_SECRET_KEY e GEMINI_API_KEY."
+    error_message = "Informe DATABASE_URL e JWT_SECRET_KEY. GEMINI_API_KEY e ADMIN_SECRET_KEY são opcionais. Use versões numéricas."
+  }
+}
+
+variable "container_port" {
+  description = "Porta HTTP do container da API."
+  type        = number
+  default     = 8080
+
+  validation {
+    condition     = var.container_port == floor(var.container_port) && var.container_port >= 1 && var.container_port <= 65535
+    error_message = "Use uma porta TCP inteira entre 1 e 65535."
   }
 }
 

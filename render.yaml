@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: nicolas-hub-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: APP_ENVIRONMENT
+        value: production
+      - key: RUN_MIGRATIONS
+        value: "true"
+      - key: PORT
+        value: "8080"
+      - key: PUBLIC_REGISTRATION
+        value: "false"
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: FRONTEND_ORIGINS
+        sync: false

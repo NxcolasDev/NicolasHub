@@ -68,8 +68,9 @@ e inspeção da mensagem na AWS. [Federação AWS com identidade GCP](https://aw
    em `terraform/`. Revise o plano da fila, DLQ e role. A saída
    `cloud_run_telemetry` fornece `region`, `queue_url`, `role_arn` e
    `audience` para `aws_telemetry` no GCP.
-4. Cadastre as versões de `DATABASE_URL`, `JWT_SECRET_KEY` e `GEMINI_API_KEY`
-   no Secret Manager. Use a conexão Neon com TLS e o driver `postgresql+psycopg`.
+4. Cadastre as versões de `DATABASE_URL` e `JWT_SECRET_KEY` no Secret Manager.
+   Acrescente `GEMINI_API_KEY` e `ADMIN_SECRET_KEY` conforme os recursos que
+   precisar habilitar. Use a conexão Neon com TLS e o driver `postgresql+psycopg`.
    Configure `secret_versions` conforme as versões cadastradas.
 5. Publique a imagem `linux/amd64` usando `backend/Dockerfile` e a raiz do
    checkout como contexto. Configure `api_image` com o URI do Artifact Registry
