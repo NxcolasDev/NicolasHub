@@ -6,6 +6,7 @@ import type { CareerAdvice, JobFair, Profile } from "../api";
 import { importantImage, skins } from "../data/sprites";
 import { AvatarStage } from "./PixelAvatar";
 import { publicProfessionalLinks } from "../config/profileLinks";
+import CompanyFit from "./CompanyFit";
 
 const areaFilters = {
   Cloud: /\b(cloud|nuvem|infraestrutura)\b/,
@@ -104,23 +105,33 @@ function Resume({ profile, advice }: { profile: Profile; advice: CareerAdvice })
   );
 }
 
-export default function Career({ profile, token, onSignIn, openAnalysis }: { profile: Profile | null; token: string; onSignIn: () => void; openAnalysis: boolean }) {
+export default function Career({ profile, token, openAnalysis }: { profile: Profile | null; token: string; openAnalysis: boolean }) {
   const [fair, setFair] = useState<JobFair | null>(null);
   const [fairError, setFairError] = useState("");
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [filter, setFilter] = useState("");
   const [area, setArea] = useState<Area | "">("");
   const [companyId, setCompanyId] = useState("");
+  const [fitCompanyId, setFitCompanyId] = useState("");
   const [description, setDescription] = useState("");
   const [advice, setAdvice] = useState<CareerAdvice | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const fitDialog = useRef<HTMLDialogElement>(null);
   const resume = useRef<HTMLDivElement>(null);
+  const fitPanel = useRef<HTMLDivElement>(null);
+  const selectedCompany = fair?.companies.find((company) => company.id === fitCompanyId);
 
   useEffect(() => {
-    if (openAnalysis && !fitDialog.current?.open) fitDialog.current?.showModal();
-  }, [openAnalysis]);
+    if (token && openAnalysis && !fitDialog.current?.open) fitDialog.current?.showModal();
+  }, [openAnalysis, token]);
+
+  useEffect(() => {
+    if (selectedCompany && fitPanel.current) {
+      fitPanel.current.focus();
+      fitPanel.current.scrollIntoView({ block: "start" });
+    }
+  }, [selectedCompany]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -160,7 +171,7 @@ export default function Career({ profile, token, onSignIn, openAnalysis }: { pro
             <h1>Carreira e fit cultural</h1>
             <p>Conheça as empresas da feira, compare os requisitos de uma vaga com meu perfil e gere um currículo sob medida.</p>
             <div className="actions">
-              <button type="button" className="button primary" onClick={() => fitDialog.current?.showModal()}><Sparkles size={16} /> Gerar currículo sob medida</button>
+              {token && <button type="button" className="button primary" onClick={() => fitDialog.current?.showModal()}><Sparkles size={16} /> Gerar currículo sob medida</button>}
               <span className="feature-version">Em breve — v2.0</span>
               <a className="button secondary" href="/#planos-2027">Ver planos para 2027 <ArrowUpRight size={16} /></a>
             </div>
@@ -184,6 +195,7 @@ export default function Career({ profile, token, onSignIn, openAnalysis }: { pro
             </>
           )}
           {matchingCompanies?.length === 0 && <p role="status" className="muted">Nenhuma empresa encontrada.</p>}
+          {selectedCompany && <div ref={fitPanel} tabIndex={-1} id="company-fit"><CompanyFit company={selectedCompany} /></div>}
           <div className="card-grid company-grid">
             {matchingCompanies?.map((company) => (
               <article className="panel company" key={company.id}>
@@ -196,14 +208,15 @@ export default function Career({ profile, token, onSignIn, openAnalysis }: { pro
                 <div className="actions">
                   {company.jobs && <a href={company.jobs} target="_blank" rel="noopener noreferrer">Vagas <ArrowUpRight size={14} /></a>}
                   {company.linkedin && <a href={company.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn <ArrowUpRight size={14} /></a>}
-                  <button className="feature-link" type="button" onClick={() => { setCompanyId(company.id); fitDialog.current?.showModal(); }}>Analisar vaga <ArrowUpRight size={14} /></button>
+                  <button className="feature-link" type="button" aria-pressed={fitCompanyId === company.id} onClick={() => setFitCompanyId(company.id)}>Por que me contratar?</button>
+                  {token && <button className="feature-link" type="button" onClick={() => { setCompanyId(company.id); fitDialog.current?.showModal(); }}>Analisar vaga <ArrowUpRight size={14} /></button>}
                 </div>
               </article>
             ))}
           </div>
         </section>
 
-        <dialog ref={fitDialog} className="showcase-dialog fit-dialog" aria-labelledby="fit-title">
+        {token && <dialog ref={fitDialog} className="showcase-dialog fit-dialog" aria-labelledby="fit-title">
           <div className="dialog-heading"><h2 id="fit-title">Analisar vaga com Gemini</h2><button type="button" className="icon-button" aria-label="Fechar" onClick={() => fitDialog.current?.close()}><X size={20} /></button></div>
           <form onSubmit={generate}>
             <label htmlFor="company">Empresa da feira (opcional)</label>
@@ -214,9 +227,7 @@ export default function Career({ profile, token, onSignIn, openAnalysis }: { pro
             <label htmlFor="description">Descrição da vaga</label>
             <textarea id="description" rows={6} placeholder="Cole a descrição, com requisitos, responsabilidades e informações sobre a equipe." minLength={30} maxLength={14000} value={description} onChange={(event) => setDescription(event.target.value)} required />
             <div className="actions">
-              {token
-                ? <button className="button primary" type="submit" disabled={busy || !profile || description.trim().length < 30}><Sparkles size={16} /> {busy ? "Analisando vaga…" : "Gerar análise e currículo"}</button>
-                : <button className="button primary" type="button" onClick={onSignIn}>Entrar para analisar</button>}
+              <button className="button primary" type="submit" disabled={busy || !profile || description.trim().length < 30}><Sparkles size={16} /> {busy ? "Analisando vaga…" : "Gerar análise e currículo"}</button>
             </div>
           </form>
           {error && <p className="error" role="alert">{error}</p>}
@@ -234,9 +245,9 @@ export default function Career({ profile, token, onSignIn, openAnalysis }: { pro
             {profile && <div className="actions"><button type="button" className="button secondary" onClick={() => { fitDialog.current?.close(); resume.current?.scrollIntoView({ block: "start" }); }}><ArrowDown size={17} /> Ver currículo</button></div>}
           </section>
           )}
-        </dialog>
+        </dialog>}
       </div>
-      {profile && advice && <div ref={resume} className="career-resume"><Resume profile={profile} advice={advice} /></div>}
+      {token && profile && advice && <div ref={resume} className="career-resume"><Resume profile={profile} advice={advice} /></div>}
     </div>
   );
 }

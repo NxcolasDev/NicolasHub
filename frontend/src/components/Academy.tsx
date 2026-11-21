@@ -86,7 +86,7 @@ function StudyTrack({ topic, token, onSignIn }: { topic: Topic; token: string; o
       })}
       <Quiz questions={[track.question]} />
       {topic === "network" && <div className="diagram"><h3>Diagrama de arquitetura VPC</h3><Diagram /></div>}
-      <div className="generator">
+      {token && <div className="generator">
         <div className="section-heading"><Sparkles size={22} /><h3>Gerar material com Gemini</h3></div>
         <form onSubmit={generate}>
           <label htmlFor="notes">{topic === "college" ? "Cole suas anotações ou o conteúdo da prova" : "Tópicos e anotações adicionais (opcional)"}</label>
@@ -108,8 +108,8 @@ function StudyTrack({ topic, token, onSignIn }: { topic: Topic; token: string; o
           </div>
         </form>
         {error && <p className="error" role="alert">{error}</p>}
-      </div>
-      {material && (
+      </div>}
+      {token && material && (
         <div className="generated-study" aria-live="polite">
           <h3>Resumo de revisão</h3>
           <p className="multiline">{material.result.summary}</p>

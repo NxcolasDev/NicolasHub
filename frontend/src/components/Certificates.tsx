@@ -49,7 +49,7 @@ function readCertificates(): Certificate[] {
   }
 }
 
-export default function Certificates({ profile }: { profile: Profile | null }) {
+export default function Certificates({ profile, admin }: { profile: Profile | null; admin: boolean }) {
   const [saved, setSaved] = useState(readCertificates);
   const [selection, setSelection] = useState<{ title: string; learning: string } | null>(null);
   const [error, setError] = useState("");
@@ -59,6 +59,7 @@ export default function Certificates({ profile }: { profile: Profile | null }) {
 
   function add(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!admin) return;
     const form = event.currentTarget;
     const fields = new FormData(form);
     const value = (field: string) => String(fields.get(field) ?? "").trim();
@@ -85,7 +86,7 @@ export default function Certificates({ profile }: { profile: Profile | null }) {
           <a href={credly || referenceLinks.awsBadges} className="button secondary" target="_blank" rel="noopener noreferrer">{credly ? "Meu Credly" : "Badges AWS no Credly"} <ArrowUpRight size={15} /></a>
           {linkedIn && <a href={linkedIn} className="button secondary" target="_blank" rel="noopener noreferrer">Perfil no LinkedIn <ArrowUpRight size={15} /></a>}
           <a href="https://www.cloudskillsboost.google/" className="button secondary" target="_blank" rel="noopener noreferrer">Google Cloud Skills Boost <ArrowUpRight size={15} /></a>
-          <button type="button" className="button primary" onClick={() => { setError(""); dialog.current?.showModal(); }}><Plus size={17} /> Cadastrar certificado</button>
+          {admin && <button type="button" className="button primary" onClick={() => { setError(""); dialog.current?.showModal(); }}><Plus size={17} /> Cadastrar certificado</button>}
         </div>
         <div className="certificate-showcase">
           <div>
@@ -124,7 +125,7 @@ export default function Certificates({ profile }: { profile: Profile | null }) {
             <AvatarStage skin={skins.middle} dialogue={selection?.learning ?? "Passe pelo certificado ou selecione uma credencial para ler sobre o aprendizado."} />
           </aside>
         </div>
-        <dialog className="showcase-dialog" ref={dialog} aria-labelledby="certificate-form-title">
+        {admin && <dialog className="showcase-dialog" ref={dialog} aria-labelledby="certificate-form-title">
           <div className="dialog-heading"><h2 id="certificate-form-title">Cadastrar certificado</h2><button type="button" className="icon-button" aria-label="Fechar" onClick={() => dialog.current?.close()}><X size={20} /></button></div>
           <p className="muted">As credenciais adicionadas aqui ficam neste navegador.</p>
           <form onSubmit={add}>
@@ -136,7 +137,7 @@ export default function Certificates({ profile }: { profile: Profile | null }) {
             {error && <p className="error" role="alert">{error}</p>}
             <div className="actions"><button type="submit" className="button primary">Salvar certificado</button></div>
           </form>
-        </dialog>
+        </dialog>}
       </div>
     </section>
   );

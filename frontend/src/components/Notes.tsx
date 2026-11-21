@@ -38,7 +38,7 @@ function readShared(): Page | null {
   } catch { return null; }
 }
 
-export default function Notes() {
+export default function Notes({ admin }: { admin: boolean }) {
   const [folders, setFolders] = useState(loadNotes);
   const [folderId, setFolderId] = useState(folders[0]?.id ?? "");
   const [pageId, setPageId] = useState(folders[0]?.pages[0]?.id ?? "");
@@ -74,6 +74,7 @@ export default function Notes() {
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!admin) return;
     const fields = new FormData(event.currentTarget);
     const title = String(fields.get("title") ?? "").trim();
     if (!title) { setFeedback("Preencha o título."); return; }
@@ -111,19 +112,19 @@ export default function Notes() {
     <div className="notes-layout">
       <aside className="notes-sidebar" aria-label="Pastas e folhas">
         <h2>Pastas</h2>
-        <button type="button" className="button secondary small" onClick={() => { setMode("folder"); setFeedback(""); }}><FolderPlus size={16} /> Nova pasta</button>
+        {admin && <button type="button" className="button secondary small" onClick={() => { setMode("folder"); setFeedback(""); }}><FolderPlus size={16} /> Nova pasta</button>}
         <nav aria-label="Pastas do caderno">
           {folders.map((item) => <button type="button" key={item.id} aria-pressed={!shared && folderId === item.id} onClick={() => select(item.id, item.pages[0]?.id)}>{item.name}<span>{item.pages.length}</span></button>)}
         </nav>
         {!shared && folder && <><h3>Folhas</h3>
-          <button type="button" className="button secondary small" onClick={() => { setMode("page"); setFeedback(""); }}><FilePlus size={16} /> Nova folha</button>
+          {admin && <button type="button" className="button secondary small" onClick={() => { setMode("page"); setFeedback(""); }}><FilePlus size={16} /> Nova folha</button>}
           <nav aria-label="Folhas da pasta">
             {folder.pages.map((item) => <button type="button" key={item.id} aria-pressed={pageId === item.id} onClick={() => select(folder.id, item.id)}>{item.title}</button>)}
           </nav></>}
         <p className="muted">As edições ficam neste navegador.</p>
       </aside>
       <section className="notes-sheet">
-        {mode !== "read" ? <form key={mode} onSubmit={submit}>
+        {admin && mode !== "read" ? <form key={mode} onSubmit={submit}>
           <h2>{mode === "folder" ? "Nova pasta" : mode === "edit" ? "Editar folha" : "Nova folha"}</h2>
           <label htmlFor="note-title">{mode === "folder" ? "Nome da pasta" : "Título da folha"}</label>
           <input id="note-title" name="title" maxLength={120} defaultValue={mode === "edit" ? page?.title : ""} required />
@@ -140,7 +141,7 @@ export default function Notes() {
           {page.tags && <ul className="tags">{page.tags.split(",").map((tag, index) => tag.trim() && <li key={index}>{tag.trim()}</li>)}</ul>}
           <div className="note-markdown"><Markdown skipHtml disallowedElements={["img"]}>{page.body}</Markdown></div>
           <div className="actions">
-            {!shared && <button type="button" className="button secondary" onClick={() => { setMode("edit"); setFeedback(""); }}>Editar folha</button>}
+            {admin && !shared && <button type="button" className="button secondary" onClick={() => { setMode("edit"); setFeedback(""); }}>Editar folha</button>}
             <button type="button" className="button secondary" onClick={() => void share(page)}><Link2 size={16} /> Compartilhar folha</button>
           </div>
           {shareUrl && <label className="notes-share">Link de leitura<input value={shareUrl} onFocus={(event) => event.target.select()} readOnly /></label>}

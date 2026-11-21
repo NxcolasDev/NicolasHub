@@ -167,23 +167,21 @@ export function askAssistant(prompt: string, token: string): Promise<AssistantRe
 export async function authenticate(
   email: string,
   password: string,
-  createAccount: boolean,
+  adminKey: string,
 ): Promise<string> {
-  if (createAccount) {
-    await requestJson<{ id: number; email: string }>("/api/v1/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-  }
-
   const form = new URLSearchParams({ username: email, password });
   const response = await requestJson<{ access_token: string }>("/api/v1/auth/login", {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    headers: { "Content-Type": "application/x-www-form-urlencoded", "X-Admin-Key": adminKey },
     body: form,
   });
   return response.access_token;
+}
+
+export function verifyAdminSession(token: string, signal?: AbortSignal) {
+  return requestJson<{ admin: boolean }>("/api/v1/auth/session", {
+    headers: { Authorization: `Bearer ${token}` }, signal, cache: "no-store",
+  });
 }
 
 export function getProfile(signal?: AbortSignal): Promise<Profile> {

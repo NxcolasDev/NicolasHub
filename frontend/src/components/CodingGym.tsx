@@ -131,9 +131,9 @@ function MissionWorkspace({ mission, initialDraft, saveDraft, token, onSignIn }:
           <div><dt>Lógica sugerida</dt><dd>{guidance?.strategy_hint ?? mission.strategy}</dd></div>
           <div><dt>Complexidade de referência</dt><dd>{mission.complexity}</dd>{guidance && <dd>{guidance.complexity_hint}</dd>}</div>
         </dl>
-        <button type="button" className="button secondary" onClick={generate} disabled={generating}>
+        {token && <button type="button" className="button secondary" onClick={generate} disabled={generating}>
           <Sparkles size={17} /> {generating ? "Gerando trilha…" : "Gerar Trilha com Gemini"}
-        </button>
+        </button>}
         {!token && <p className="gym-note">Entre para gerar dicas com Gemini. A execução local está disponível para visitantes.</p>}
         {aiError && <p className="error" role="alert">{aiError}</p>}
       </article>

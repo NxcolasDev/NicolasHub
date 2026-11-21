@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { ArrowUpRight, BriefcaseBusiness, Cloud, LayoutGrid, LogIn, LogOut, Network, NotebookPen, X } from "lucide-react";
-import { authenticate, getHealth, getProfile } from "./api";
+import { authenticate, getHealth, getProfile, verifyAdminSession } from "./api";
 import type { Profile } from "./api";
 import Academy from "./components/Academy";
 import type { AcademyView } from "./components/Academy";
@@ -9,7 +9,6 @@ import Career from "./components/Career";
 import Architecture from "./components/Architecture";
 import Portfolio from "./components/Portfolio";
 import { smile } from "./data/sprites";
-import { AudioToggle, SiteAudioProvider } from "./components/SiteAudio";
 
 const Notes = lazy(() => import("./components/Notes"));
 
@@ -43,7 +42,6 @@ function AccountDialog({
   dialog: React.RefObject<HTMLDialogElement>;
   onConnect: (token: string) => void;
 }) {
-  const [create, setCreate] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -54,11 +52,10 @@ function AccountDialog({
     setBusy(true);
     setError("");
     try {
-      const token = await authenticate(String(fields.get("email")), String(fields.get("password")), create);
+      const token = await authenticate(String(fields.get("email")), String(fields.get("password")), String(fields.get("admin-key")));
       onConnect(token);
       dialog.current?.close();
       form.reset();
-      setCreate(false);
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : "Não foi possível conectar.");
     } finally {
@@ -69,19 +66,19 @@ function AccountDialog({
   return (
     <dialog ref={dialog} onClose={() => { setError(""); dialog.current?.querySelector("form")?.reset(); }} aria-labelledby="account-title">
       <div className="dialog-heading">
-        <h2 id="account-title">{create ? "Criar conta" : "Entrar no Nicolas Hub"}</h2>
+        <h2 id="account-title">Acesso administrativo</h2>
         <button type="button" className="icon-button" aria-label="Fechar" onClick={() => dialog.current?.close()}><X size={20} /></button>
       </div>
       <form onSubmit={submit}>
         <label htmlFor="account-email">E-mail</label>
         <input id="account-email" name="email" type="email" autoComplete="email" maxLength={254} required />
         <label htmlFor="account-password">Senha</label>
-        <input id="account-password" name="password" type="password" autoComplete={create ? "new-password" : "current-password"} minLength={create ? 12 : 1} maxLength={128} required />
-        {create && <p className="muted">Use pelo menos 12 caracteres.</p>}
+        <input id="account-password" name="password" type="password" autoComplete="current-password" maxLength={128} required />
+        <label htmlFor="account-admin-key">Chave administrativa</label>
+        <input id="account-admin-key" name="admin-key" type="password" autoComplete="off" minLength={32} maxLength={256} required />
         {error && <p className="error" role="alert">{error}</p>}
         <div className="actions">
-          <button type="submit" className="button primary" disabled={busy}>{busy ? "Conectando…" : create ? "Criar conta" : "Entrar"}</button>
-          <button type="button" className="button secondary" disabled={busy} onClick={() => { setCreate((current) => !current); setError(""); }}>{create ? "Já tenho conta" : "Criar conta"}</button>
+          <button type="submit" className="button primary" disabled={busy}>{busy ? "Conectando…" : "Entrar"}</button>
         </div>
       </form>
     </dialog>
@@ -91,13 +88,31 @@ function AccountDialog({
 export default function App() {
   const [address, setAddress] = useState(window.location.href);
   const { pathname, search, hash } = new URL(address);
-  const [token, setToken] = useState(loadToken);
+  const [token, setToken] = useState("");
   const [workspaceVersion, setWorkspaceVersion] = useState(0);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [profileError, setProfileError] = useState(false);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [health, setHealth] = useState<"checking" | "online" | "offline">("checking");
   const dialog = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    function restoreSession() {
+      const saved = loadToken();
+      if (!saved) return;
+      void verifyAdminSession(saved, controller.signal).then((session) => {
+        if (!controller.signal.aborted && sessionStorage.getItem(tokenKey) === saved) {
+          setToken(session.admin ? saved : "");
+        }
+      }).catch(() => {
+        if (!controller.signal.aborted && sessionStorage.getItem(tokenKey) === saved) setToken("");
+      });
+    }
+    restoreSession();
+    const timer = window.setInterval(restoreSession, 30_000);
+    return () => { controller.abort(); window.clearInterval(timer); };
+  }, []);
 
   useEffect(() => {
     const syncAddress = () => setAddress(window.location.href);
@@ -176,7 +191,7 @@ export default function App() {
   const portfolio = !architecture && !academy && !career && !notes;
 
   return (
-    <SiteAudioProvider>
+    <>
       <svg width="0" height="0" className="sprite-filters" aria-hidden="true">
         <defs>
           <filter id="sprite-light-matte" colorInterpolationFilters="sRGB">
@@ -199,20 +214,19 @@ export default function App() {
             <a href="/carreira" aria-current={career ? "page" : undefined}><BriefcaseBusiness size={16} /> Carreira</a>
           </nav>
           <div className="header-tools flex items-center">
-            <AudioToggle header />
             <button type="button" className="button secondary account-button" onClick={token ? disconnect : signIn}>
               {token ? <LogOut size={17} /> : <LogIn size={17} />}
-              {token ? "Sair" : "Entrar"}
+              {token ? "Sair" : "Admin"}
             </button>
           </div>
         </div>
       </header>
       <main className={portfolio ? "portfolio-main" : "shell main-content"}>
-        {portfolio && <Portfolio profile={profile} />}
-        {architecture && <Architecture key={search} />}
+        {portfolio && <Portfolio profile={profile} admin={Boolean(token)} />}
+        {architecture && <Architecture key={search} admin={Boolean(token)} />}
         {academy && <Academy key={workspaceVersion} view={academy} token={token} onSignIn={signIn} />}
-        {career && <Career key={workspaceVersion} profile={profile} token={token} onSignIn={signIn} openAnalysis={hash === "#analisar-vaga"} />}
-        {notes && <Suspense fallback={<p role="status">Abrindo o caderno…</p>}><Notes /></Suspense>}
+        {career && <Career key={workspaceVersion} profile={profile} token={token} openAnalysis={hash === "#analisar-vaga"} />}
+        {notes && <Suspense fallback={<p role="status">Abrindo o caderno…</p>}><Notes admin={Boolean(token)} /></Suspense>}
         {profileError && (portfolio || career) && (
           <div className={portfolio ? "shell actions profile-retry no-print" : "actions no-print"} role="status"><p className="muted">Dados do perfil indisponíveis.</p>
             <button type="button" className="button secondary" onClick={() => setLoadAttempt((current) => current + 1)}>Recarregar perfil</button>
@@ -226,6 +240,6 @@ export default function App() {
         </div>
       </footer>
       <AccountDialog dialog={dialog} onConnect={(accessToken) => { sessionStorage.setItem(tokenKey, accessToken); setToken(accessToken); }} />
-    </SiteAudioProvider>
+    </>
   );
 }

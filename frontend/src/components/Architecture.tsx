@@ -28,7 +28,7 @@ const routes: { from: Node; to: Node; path: string; reference?: boolean }[] = [
   { from: "api", to: "gemini", path: "M367 246 V318" },
 ];
 
-export default function Architecture() {
+export default function Architecture({ admin }: { admin: boolean }) {
   const [selected, setSelected] = useState<Node>("api");
   const detail = nodes[selected];
   return (
@@ -38,6 +38,7 @@ export default function Architecture() {
           <div className="eyebrow"><Network size={18} /> Arquitetura multicloud</div>
           <h1>Da requisição ao evento.</h1>
           <p>Explore o caminho dos dados pelo Nicolas Hub e compare as opções de mensageria na AWS e no Google Cloud.</p>
+          <p>Na demonstração sem credenciais de nuvem, a telemetria é persistida no PostgreSQL em modo simulado.</p>
           <div className="provider-marks">
             <img src={importantImage("aws.png")} alt="AWS" />
             <img src={importantImage("gcp.png")} alt="Google Cloud" />
@@ -73,7 +74,7 @@ export default function Architecture() {
         </div>
         <div className="actions"><a className="button secondary" href={referenceLinks.architecture} target="_blank" rel="noopener noreferrer">Documentação e Terraform <ArrowUpRight size={16} /></a></div>
       </section>
-      <ArchitectureVideos />
+      <ArchitectureVideos admin={admin} />
       <section className="page-section">
         <div className="section-heading"><Network size={22} /><h2>Estudo de redes VPC</h2></div>
         <Diagram />

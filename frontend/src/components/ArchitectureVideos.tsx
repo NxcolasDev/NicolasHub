@@ -65,7 +65,7 @@ export function ProjectVideo({ title, ids }: { title: string; ids: string[] }) {
   </div>;
 }
 
-export default function ArchitectureVideos() {
+export default function ArchitectureVideos({ admin }: { admin: boolean }) {
   const [selected, setSelected] = useState<VideoProject>(() => {
     const project = new URLSearchParams(location.search).get("video");
     return isProject(project) ? project : "nicolas-hub";
@@ -76,6 +76,7 @@ export default function ArchitectureVideos() {
 
   function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!admin) return;
     const form = event.currentTarget;
     const value = String(new FormData(form).get("video-url") ?? "").trim();
     const id = extractVideoId(value);
@@ -97,8 +98,8 @@ export default function ArchitectureVideos() {
         onClick={() => { setSelected(id); setFeedback(""); }}>{projects[id]}</button>)}
     </div>
     {ids.length > 0 ? <ProjectVideo key={`${selected}:${ids.length}`} title={projects[selected]} ids={ids} />
-      : <p className="muted">Cadastre o primeiro vídeo de {projects[selected]}.</p>}
-    <details className="video-form">
+      : <p className="muted">Nenhum vídeo disponível para {projects[selected]}.</p>}
+    {admin && <details className="video-form">
       <summary>Cadastrar vídeo em {projects[selected]}</summary>
       <form onSubmit={save}>
         <label htmlFor="video-url">URL do vídeo no YouTube</label>
@@ -106,7 +107,7 @@ export default function ArchitectureVideos() {
         <button type="submit" className="button primary small">Salvar vídeo</button>
       </form>
       <p className="muted">Os vídeos cadastrados ficam neste navegador.</p>
-    </details>
+    </details>}
     {feedback && <p role="status">{feedback}</p>}
   </section>;
 }

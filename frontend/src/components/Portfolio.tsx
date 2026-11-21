@@ -207,7 +207,8 @@ function ExtendedLook({ profile }: { profile: Profile | null }) {
   );
 }
 
-export default function Portfolio({ profile }: { profile: Profile | null }) {
+export default function Portfolio({ profile, admin }: { profile: Profile | null; admin: boolean }) {
+  const recora = profile?.projects.find((project) => project.id === "recora");
   return (
     <>
       <section className="hub-hero" aria-labelledby="hero-title">
@@ -249,13 +250,13 @@ export default function Portfolio({ profile }: { profile: Profile | null }) {
 
       {profile && <ProjectShowcase profile={profile} />}
 
-      <Block id="recora" side={<AvatarStage skin={skins.recora} dialogue="Do recebimento à saída, cada movimento conta." />}>
+      <Block id="recora" side={<AvatarStage skin={skins.recora} dialogue="Do primeiro contato à reativação, cada lead importa." />}>
         <div className="chapter-kicker"><Database size={17} /> Trabalho de Conclusão de Curso · UniFAAT</div>
         <h2>RECORA</h2>
         <p className="recora-status">Em desenvolvimento ativo — MVP TCC 2026</p>
-        <p>Sistema inteligente de gestão de estoque desenvolvido em equipe na UniFAAT. O projeto busca automatizar o controle de entradas e saídas, rastrear movimentações e reduzir perdas com uma arquitetura escalável em nuvem.</p>
+        <p>{recora?.summary ?? "Plataforma para organizar o processo comercial de empresas que vendem planos de saúde. Centraliza cadastro de leads, funil, histórico de interações, follow-ups e reativação de oportunidades, com validação de CNPJ via BrasilAPI."}</p>
         <ul className="tags recora-stack" aria-label="Tecnologias do RECORA">
-          {["React", "Vite", "Tailwind CSS", "Node.js", "Express", "PostgreSQL", "Docker", "Amazon ECR", "Amazon ECS"].map((item) => <li key={item}>{item}</li>)}
+          {(recora?.stack ?? ["React", "TypeScript", "Vite", "Python", "FastAPI", "SQLAlchemy", "PostgreSQL", "Docker", "AWS S3", "Amazon ECR", "Amazon ECS / Fargate", "Terraform", "Prometheus", "Grafana", "Ollama", "BrasilAPI"]).map((item) => <li key={item}>{item}</li>)}
         </ul>
       </Block>
 
@@ -280,7 +281,7 @@ export default function Portfolio({ profile }: { profile: Profile | null }) {
 
       <ExtendedLook profile={profile} />
 
-      <Certificates profile={profile} />
+      <Certificates profile={profile} admin={admin} />
 
       <Block id="planos-2027" side={<AvatarStage skin={skins.future} dialogue="Próxima parada: 2027." />}>
         <div className="chapter-kicker">Visão de futuro</div>

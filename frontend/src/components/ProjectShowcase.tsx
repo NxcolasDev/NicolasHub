@@ -5,6 +5,11 @@ import { professionalLinks, projectLinks } from "../config/profileLinks";
 import { ProjectVideo, readVideoLibrary, videosForProject } from "./ArchitectureVideos";
 
 const projectDetails: Record<string, { cover: string; flow: string; architecture?: string }> = {
+  recora: {
+    cover: "recora",
+    architecture: "/#recora",
+    flow: "React + TypeScript → FastAPI + SQLAlchemy → PostgreSQL · Validação de CNPJ pela BrasilAPI",
+  },
   "nicolas-hub": {
     cover: "nicolas_hub",
     architecture: "/arquitetura",
@@ -72,7 +77,7 @@ function ProjectCard({ project, hasVideos, onArchitecture, onVideos }: {
         {details?.architecture ? <a href={details.architecture}><Network size={15} /> Arquitetura</a>
           : details && <button type="button" className="feature-link" onClick={onArchitecture}><Network size={15} /> Arquitetura</button>}
         {hasVideos ? <button type="button" className="feature-link" onClick={onVideos}><Video size={15} /> Ver vídeos</button>
-          : <a href={`/arquitetura?video=${encodeURIComponent(project.id)}#videos`}><Video size={15} /> Vídeos</a>}
+          : project.id !== "recora" && <a href={`/arquitetura?video=${encodeURIComponent(project.id)}#videos`}><Video size={15} /> Vídeos</a>}
       </div>
     </article>
   );
