@@ -121,3 +121,40 @@ export const tracks: Track[] = [
     },
   },
 ];
+
+export const publicPracticeQuestions: Question[] = [
+  ...tracks.map((track) => track.question),
+  {
+    prompt: "Que método HTTP costuma ser usado para consultar um recurso sem pedir alterações no servidor?",
+    options: ["POST", "DELETE", "GET", "PUT"],
+    correct_index: 2,
+    explanations: [
+      "POST envia dados para processamento, como a criação de um registro.",
+      "DELETE solicita a remoção de um recurso.",
+      "GET solicita uma representação do recurso, como os dados de um projeto.",
+      "PUT solicita a criação ou substituição do recurso identificado pela URL.",
+    ],
+  },
+  {
+    prompt: "Qual comando do Terraform mostra as mudanças propostas antes de aplicar a infraestrutura?",
+    options: ["terraform plan", "terraform apply", "terraform fmt", "terraform init"],
+    correct_index: 0,
+    explanations: [
+      "O plano mostra quais recursos seriam criados, alterados ou excluídos.",
+      "Esse comando aplica as mudanças do plano.",
+      "Esse comando padroniza a formatação dos arquivos do Terraform.",
+      "Esse comando inicializa o diretório e prepara os provedores e módulos.",
+    ],
+  },
+  {
+    prompt: "Em SQL, qual cláusula filtra linhas antes de uma agregação com GROUP BY?",
+    options: ["ORDER BY", "HAVING", "LIMIT", "WHERE"],
+    correct_index: 3,
+    explanations: [
+      "ORDER BY ordena o resultado.",
+      "HAVING filtra os grupos depois da agregação.",
+      "LIMIT determina quantas linhas do resultado serão retornadas.",
+      "WHERE seleciona as linhas que entram na agregação.",
+    ],
+  },
+];

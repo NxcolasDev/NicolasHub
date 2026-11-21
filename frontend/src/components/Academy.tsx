@@ -4,7 +4,7 @@ import { BookOpen, Box, Cloud, Database, GraduationCap, Layers, Network, Shield,
 import { getStudyMaterial } from "../api";
 import { referenceLinks } from "../config/profileLinks";
 import type { StudyMaterial, Topic } from "../api";
-import { tracks } from "../data/tracks";
+import { publicPracticeQuestions, tracks } from "../data/tracks";
 import { academyTrackSkins, importantImage, skins } from "../data/sprites";
 import LogicLab from "./LogicLab";
 import { Diagram } from "./Portfolio";
@@ -18,7 +18,7 @@ const universityLogo = importantImage("unifaat.png");
 const topicIcons = { cloud: Cloud, data: Layers, docker: Box, databases: Database, network: Network, security: Shield, college: GraduationCap };
 export type AcademyView = "tracks" | "databases" | "college" | "terminal" | "assistant";
 
-function StudyTrack({ topic, token, onSignIn }: { topic: Topic; token: string; onSignIn: () => void }) {
+function StudyTrack({ topic, token }: { topic: Topic; token: string }) {
   const track = tracks.find((item) => item.id === topic)!;
   const visualTopics = topic === "cloud" ? ["cloud", "aws", "gcp"] as const : [topic];
   const [notes, setNotes] = useState("");
@@ -54,8 +54,7 @@ function StudyTrack({ topic, token, onSignIn }: { topic: Topic; token: string; o
   }
 
   async function requestMaterial(source: string, quantity: number, history: string[] = []) {
-    if (!token) { onSignIn(); return; }
-    if (busy || reading) return;
+    if (!token || busy || reading) return;
     if (topic === "college" && !source.trim()) { setError("Cole suas anotações ou adicione um PDF com texto."); return; }
     setError("");
     setRetryError("");
@@ -84,7 +83,6 @@ function StudyTrack({ topic, token, onSignIn }: { topic: Topic; token: string; o
         const visual = academyTrackSkins[key];
         return visual && <div className="study-avatar" key={key}><AvatarStage skin={visual.skin} dialogue={visual.dialogue} /></div>;
       })}
-      <Quiz questions={[track.question]} />
       {topic === "network" && <div className="diagram"><h3>Diagrama de arquitetura VPC</h3><Diagram /></div>}
       {token && <div className="generator">
         <div className="section-heading"><Sparkles size={22} /><h3>Gerar material com Gemini</h3></div>
@@ -102,9 +100,7 @@ function StudyTrack({ topic, token, onSignIn }: { topic: Topic; token: string; o
           </>}
           <div className="actions form-actions">
             <label>Questões <select value={count} onChange={(event) => setCount(Number(event.target.value))}>{[15, 25, 30].map((quantity) => <option key={quantity}>{quantity}</option>)}</select></label>
-            {token
-              ? <button className="button primary" type="submit" disabled={busy || reading}><Sparkles size={16} /> {busy ? "Gerando revisão…" : "Gerar simulado e flashcards"}</button>
-              : <button className="button primary" type="button" onClick={onSignIn}>Entrar para gerar</button>}
+            <button className="button primary" type="submit" disabled={busy || reading}><Sparkles size={16} /> {busy ? "Gerando revisão…" : "Gerar simulado e flashcards"}</button>
           </div>
         </form>
         {error && <p className="error" role="alert">{error}</p>}
@@ -166,14 +162,21 @@ export default function Academy({ view, token, onSignIn }: { view: AcademyView; 
           })}
         </div>
       )}
-      {showTracks && <StudyTrack key={activeTopic} topic={activeTopic} token={token} onSignIn={onSignIn} />}
+      {showTracks && <StudyTrack key={activeTopic} topic={activeTopic} token={token} />}
       {view === "college" && <>
         <div className="academic-banner">
           {collegeVisual && <AvatarStage skin={collegeVisual.skin} dialogue={collegeVisual.dialogue} />}
           <img className="university-logo" src={universityLogo} alt="UniFAAT" />
         </div>
-        <StudyTrack key="college" topic="college" token={token} onSignIn={onSignIn} />
+        <StudyTrack key="college" topic="college" token={token} />
       </>}
+      {(showTracks || view === "college") && (
+        <section className="panel page-section" aria-labelledby="public-practice-title">
+          <div className="section-heading"><BookOpen size={22} /><h2 id="public-practice-title">Simulado público · 10 questões</h2></div>
+          <p className="muted">Pratique conceitos básicos sem login. Gerar simulados maiores ou sobre outros temas com Gemini é exclusivo do modo administrador.</p>
+          <Quiz questions={publicPracticeQuestions} />
+        </section>
+      )}
       {view === "terminal" && <Suspense fallback={<p role="status">Carregando editor…</p>}><CodingGym token={token} onSignIn={onSignIn} /></Suspense>}
       {view === "assistant" && <>
         {assistantVisual && <div className="study-avatar"><AvatarStage skin={assistantVisual.skin} dialogue={assistantVisual.dialogue} /></div>}
