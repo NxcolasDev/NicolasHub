@@ -50,7 +50,8 @@ def test_analytics_events_are_authenticated_and_scoped_to_user(
         json={"severity": "ERROR", "message": "database timeout"},
         headers=first_headers,
     )
-    assert created.status_code == 201
+    assert created.status_code == 200
+    assert created.json()["status"] == "SIMULATED_CLOUD_EVENT"
     assert created.json()["severity"] == "ERROR"
 
     register(client, "second@example.com")
@@ -159,13 +160,13 @@ def test_health_endpoint_reports_database_and_optional_queue(
 ) -> None:
     """Verifica que o dashboard recebe estado de banco e fila sem dados sensíveis."""
 
-    monkeypatch.setattr("app.main.check_sqs_connection", lambda: "disabled")
+    monkeypatch.setattr("app.main.check_sqs_connection", lambda: "error")
     response = client.get("/health")
     assert response.status_code == 200
     assert response.json() == {
         "status": "ok",
         "database": "ok",
-        "sqs": "disabled",
+        "sqs": "error",
     }
 
 

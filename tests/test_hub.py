@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 from app import limits
 from app.config import get_settings
 from app.main import app
+from app.security import create_access_token
 from app.services.assistant import get_structured_assistant
 
 
@@ -28,6 +29,9 @@ def test_profile_and_job_fair_include_source_data(client: TestClient) -> None:
     assert len(profile["languages"]) == 5
     assert fair["date"] == "2026-12-02"
     assert len({company["id"] for company in fair["companies"]}) == 15
+    recora = next(item for item in profile["projects"] if item["id"] == "recora")
+    assert "planos de saúde" in recora["summary"]
+    assert "Amazon ECS / Fargate" in recora["stack"]
 
 
 def test_validation_body_limits_and_cors(client: TestClient) -> None:
@@ -56,7 +60,7 @@ def test_validation_body_limits_and_cors(client: TestClient) -> None:
     origin = get_settings().allowed_origins[0]
     headers = {
         "Access-Control-Request-Method": "POST",
-        "Access-Control-Request-Headers": "Authorization, Content-Type",
+        "Access-Control-Request-Headers": "Authorization, Content-Type, X-Admin-Key",
     }
     allowed = client.options(
         "/api/v1/auth/login", headers={**headers, "Origin": origin}
@@ -69,6 +73,36 @@ def test_validation_body_limits_and_cors(client: TestClient) -> None:
     )
     assert blocked.status_code == 400
     assert "access-control-allow-origin" not in blocked.headers
+
+
+def test_write_access_requires_admin_key_or_signed_admin_session(
+    client: TestClient, monkeypatch
+) -> None:
+    administrator = _login(client)
+    client.headers.pop("X-Admin-Key")
+    endpoint = "/api/v1/analytics/events"
+    event = {"severity": "INFO", "message": "  Ambiente sem fila  "}
+    assert client.get("/api/v1/hub/profile").status_code == 200
+    assert client.post(endpoint, json=event).status_code == 401
+    assert (
+        client.post(endpoint, json=event, headers={"X-Admin-Key": "wrong"}).status_code
+        == 401
+    )
+    legacy = {"Authorization": f"Bearer {create_access_token('1')}"}
+    assert client.post(endpoint, json=event, headers=legacy).status_code == 401
+    assert client.get("/api/v1/auth/session", headers=administrator).json() == {
+        "admin": True
+    }
+    response = client.post(endpoint, json=event, headers=administrator)
+    assert response.status_code == 200
+    assert response.json()["status"] == "SIMULATED_CLOUD_EVENT"
+    assert response.json()["message"] == "Ambiente sem fila"
+    assert client.get(endpoint, headers=administrator).json()[0]["id"] == (
+        response.json()["id"]
+    )
+    monkeypatch.setattr(get_settings(), "admin_secret_key", None)
+    assert client.get("/api/v1/auth/session", headers=administrator).status_code == 401
+    assert client.post(endpoint, json=event, headers=administrator).status_code == 401
 
 
 def test_login_quota_returns_retry_after(client: TestClient, monkeypatch) -> None:

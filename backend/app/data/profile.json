@@ -127,6 +127,12 @@
   ],
   "projects": [
     {
+      "id": "recora",
+      "title": "RECORA",
+      "summary": "Plataforma para organizar o processo comercial de empresas que vendem planos de saúde. Centraliza cadastro de leads, funil, histórico de interações, follow-ups e reativação de oportunidades, com validação de CNPJ via BrasilAPI.",
+      "stack": ["React", "TypeScript", "Vite", "Python", "FastAPI", "SQLAlchemy", "PostgreSQL", "Docker", "AWS S3", "Amazon ECR", "Amazon ECS / Fargate", "Terraform", "Prometheus", "Grafana", "Ollama", "BrasilAPI"]
+    },
+    {
       "id": "nicolas-hub",
       "title": "Nicolas Hub",
       "summary": "Portfólio e ambiente de aprendizagem com exercícios de lógica, analytics, telemetria SQS e integração Gemini.",

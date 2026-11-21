@@ -16,6 +16,7 @@ from app.config import get_settings
 from app.database import get_db
 from app.limits import RequestBodyLimit
 from app.routers import analytics, auth, hub, learning, preparation
+from app.security import require_admin_write
 from app.services.telemetry import check_sqs_connection
 
 settings = get_settings()
@@ -31,6 +32,7 @@ app = FastAPI(
     description="API de estudos, carreira e analytics.",
     version="1.0.0",
     debug=False,
+    dependencies=[Depends(require_admin_write)],
 )
 app.add_middleware(RequestBodyLimit, maximum=settings.request_max_bytes)
 
@@ -79,8 +81,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins,
     allow_credentials=False,
-    allow_methods=["GET", "POST"],
-    allow_headers=["Authorization", "Content-Type"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+    allow_headers=["Authorization", "Content-Type", "X-Admin-Key"],
     expose_headers=["Retry-After", "X-Request-ID"],
 )
 app.include_router(auth.router, prefix="/api/v1")
@@ -101,9 +103,7 @@ async def health_check(db: Session = Depends(get_db)) -> dict[str, object]:
         database_status = "error"
 
     sqs_status = await run_in_threadpool(check_sqs_connection)
-    overall_status = (
-        "ok" if database_status == "ok" and sqs_status != "error" else "degraded"
-    )
+    overall_status = "ok" if database_status == "ok" else "degraded"
     return JSONResponse(
         status_code=200 if overall_status == "ok" else 503,
         content={

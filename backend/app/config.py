@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     app_environment: Literal["development", "production"] = "development"
     database_url: str = "sqlite:///./nicolas_hub.db"
     jwt_secret_key: SecretStr | None = None
+    admin_secret_key: SecretStr | None = Field(
+        default=None, min_length=32, max_length=256
+    )
     jwt_access_token_expire_minutes: int = Field(default=30, ge=1, le=1440)
     public_registration: bool | None = None
     rate_limit_login: int = Field(default=10, ge=1)
@@ -61,6 +64,14 @@ class Settings(BaseSettings):
     def validate_deployment(self) -> "Settings":
         if bool(self.aws_sqs_role_arn) != bool(self.aws_web_identity_audience):
             raise ValueError("AWS_SQS_ROLE_ARN e AWS_WEB_IDENTITY_AUDIENCE são um par.")
+
+        if self.admin_secret_key is not None:
+            admin_key = self.admin_secret_key.get_secret_value()
+            if admin_key.upper().startswith("MOCK_ONLY") or (
+                self.jwt_secret_key is not None
+                and admin_key == self.jwt_secret_key.get_secret_value()
+            ):
+                raise ValueError("ADMIN_SECRET_KEY deve ser um segredo independente.")
 
         for origin in self.allowed_origins:
             url = urlsplit(origin)

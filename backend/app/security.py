@@ -1,9 +1,10 @@
 """Segurança com funções tipadas e injeção de dependências FastAPI para JWT/Argon2."""
 
+import hmac
 from datetime import datetime, timedelta, timezone
 from typing import Annotated, Any
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from pwdlib import PasswordHash
@@ -40,15 +41,57 @@ def verify_password(password: str, hashed_password: str) -> bool:
     return password_hash.verify(password, hashed_password)
 
 
-def create_access_token(subject: str) -> str:
+def _admin_marker() -> str | None:
+    secret = get_settings().admin_secret_key
+    if secret is None:
+        return None
+    return hmac.digest(
+        _jwt_secret().encode(), secret.get_secret_value().encode(), "sha256"
+    ).hex()
+
+
+def create_access_token(subject: str, *, admin: bool = False) -> str:
     """Monta JWT tipado com expiração UTC; a função encapsula assinatura segura."""
 
     expires_at = datetime.now(timezone.utc) + timedelta(
         minutes=get_settings().jwt_access_token_expire_minutes
     )
-    return jwt.encode(
-        {"sub": subject, "exp": expires_at}, _jwt_secret(), algorithm=ALGORITHM
-    )
+    claims: dict[str, Any] = {"sub": subject, "exp": expires_at}
+    if admin:
+        claims["admin"] = _admin_marker()
+    return jwt.encode(claims, _jwt_secret(), algorithm=ALGORITHM)
+
+
+def require_admin(request: Request) -> None:
+    secret = get_settings().admin_secret_key
+    if secret is not None:
+        supplied = request.headers.get("X-Admin-Key", "")
+        if supplied and hmac.compare_digest(
+            supplied.encode(), secret.get_secret_value().encode()
+        ):
+            return
+        scheme, _, token = request.headers.get("Authorization", "").partition(" ")
+        if scheme.lower() == "bearer":
+            try:
+                payload = jwt.decode(
+                    token,
+                    _jwt_secret(),
+                    algorithms=[ALGORITHM],
+                    options={"require_exp": True, "require_sub": True},
+                )
+                marker = payload.get("admin")
+                if isinstance(marker, str) and hmac.compare_digest(
+                    marker.encode(), (_admin_marker() or "").encode()
+                ):
+                    return
+            except JWTError:
+                pass
+    raise _unauthorized()
+
+
+def require_admin_write(request: Request) -> None:
+    if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
+        require_admin(request)
 
 
 def _unauthorized() -> HTTPException:

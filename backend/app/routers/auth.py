@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, ValidationError
 from sqlalchemy import select
@@ -13,7 +13,13 @@ from app.config import get_settings
 from app.database import get_db
 from app.limits import client_ip, enforce_limit
 from app.models.domain import User
-from app.security import create_access_token, hash_password, verify_password
+from app.security import (
+    create_access_token,
+    get_current_user,
+    hash_password,
+    require_admin,
+    verify_password,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -84,6 +90,7 @@ def register(
 def login(
     form: Annotated[OAuth2PasswordRequestForm, Depends()],
     request: Request,
+    response: Response,
     db: Annotated[Session, Depends(get_db)],
 ) -> TokenResponse:
     """Verifica credenciais do formulário e emite JWT."""
@@ -103,4 +110,13 @@ def login(
             detail="Email ou senha inválidos.",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    return TokenResponse(access_token=create_access_token(str(user.id)))
+    response.headers["Cache-Control"] = "no-store"
+    return TokenResponse(access_token=create_access_token(str(user.id), admin=True))
+
+
+@router.get("/session", dependencies=[Depends(require_admin)])
+def admin_session(
+    _: Annotated[User, Depends(get_current_user)], response: Response
+) -> dict[str, bool]:
+    response.headers["Cache-Control"] = "no-store"
+    return {"admin": True}
