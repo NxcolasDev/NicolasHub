@@ -178,20 +178,10 @@
 .professional-icon { box-sizing: content-box; inline-size: 1em; block-size: 1em; flex: 0 0 auto; }
 .professional-icon.github { filter: invert(1); }
 .professional-icon.linkedin { background: #eef7ff; border-radius: 2px; padding: 1px; }
-.project-feature { max-width: min(100%, 1050px); margin: 0 auto 2rem; }
-.project-feature-heading, .project-feature-tabs, .project-feature-controls { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
-.project-feature-heading { justify-content: space-between; margin-bottom: .75rem; }
-.project-feature-heading h4 { font-size: clamp(1.4rem, 4vw, 2.25rem); margin: 0; scroll-margin-top: 7rem; }
-.project-feature-heading a, .project-feature-controls .feature-link { display: inline-flex; align-items: center; gap: .4rem; }
-.project-feature-media .project-cover, .project-feature-media .project-player iframe { display: grid; width: 100%; height: auto; min-height: 0; aspect-ratio: 16 / 9; background: #030604; border-radius: .9rem; margin: 0; }
-.project-feature-media .project-player { max-width: none; margin: 0; }
-.project-feature-media .project-player iframe { display: block; }
-.project-feature-controls { justify-content: center; margin-block: .5rem .85rem; }
-.project-media-dot { display: grid; place-items: center; width: 2rem; height: 2rem; padding: 0; border: 0; background: transparent; color: #7f8b7b; cursor: pointer; }
-.project-media-dot::after { content: ""; width: .62rem; height: .62rem; border-radius: 50%; background: currentColor; }
-.project-media-dot[aria-pressed="true"] { color: var(--accent); }
-.project-media-dot:focus-visible { outline: 2px solid var(--accent); border-radius: .4rem; }
-.project-feature-tabs .button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.project-intro { max-width: 1050px; margin: 0 auto 2rem; }
+.project-intro h4 { font-size: clamp(1.4rem, 4vw, 2.25rem); margin: 0 0 .75rem; }
+.project-intro .project-player { max-width: none; margin: 0; }
+.project-intro .project-player iframe { display: block; height: auto; min-height: 0; }
 .video-form { margin-top: 14px; }
 .video-form form { max-width: 635px; }
 .video-form button { margin-top: 8px; }

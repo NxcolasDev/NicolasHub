@@ -244,7 +244,7 @@ tests/              Testes de contrato da API e motor Python
 
 **Configuração:** [Links profissionais](frontend/src/config/profileLinks.ts) · [Perfil mestre](backend/app/data/profile.json) · [Empresas da Job Fair](backend/app/data/job_fair.json)
 
-**Mídia:** capas em `frontend/public/assets/projetos/`, animações em `frontend/public/assets/Animacoes/` e quatro gravações autorais em `frontend/public/assets/audios/`. Cada idioma tem um controle para ouvir ou pausar a gravação com legendas. Os vídeos cadastrados pela administração ficam no navegador atual.
+**Mídia:** capas em `frontend/public/assets/projetos/`, animações em `frontend/public/assets/Animacoes/` e quatro gravações autorais em `frontend/public/assets/audios/`. Cada idioma tem um controle para ouvir ou pausar a gravação com legendas. Os vídeos publicados pela administração ficam no PostgreSQL.
 
 ### Demonstração pública em planos gratuitos
 
@@ -288,14 +288,14 @@ restrita ao servidor e dentro da franquia da conta.
 
 Em **Arquitetura → Vídeos**, uma sessão administrativa permite publicar links
 de vídeos do YouTube. O banco armazena o identificador do vídeo, que aparece
-para visitantes no card do projeto e na aba Arquitetura. Vídeos cadastrados na
+para visitantes na aba Arquitetura. Vídeos cadastrados na
 versão anterior podem ser publicados pelo botão **Publicar vídeos salvos neste
 navegador**. Use o mesmo navegador e endereço em que foram cadastrados ou cole
 os links no endereço do deploy para publicá-los no banco de produção.
 No mesmo painel, **Adicionar ou trocar a capa** publica uma imagem PNG, JPEG ou
-WebP de até 4 MB. O backend redimensiona e grava a imagem no PostgreSQL. A
-vitrine de Projetos abre com a capa do Nicolas Hub e permite alternar entre
-capas e vídeos no próprio portfólio.
+WebP de até 4 MB. O backend redimensiona e grava a imagem no PostgreSQL.
+Em **Portfólio → Projetos**, o vídeo mais recente publicado para o Nicolas Hub
+aparece acima da grade de projetos com capas.
 
 **Testes e lint:**
 

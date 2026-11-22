@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowUpRight, ChevronLeft, ChevronRight, Image, Layers3, Network, Video, X } from "lucide-react";
+import { ArrowUpRight, Image, Layers3, Network, X } from "lucide-react";
 import { projectCoverUrl } from "../api";
 import type { Profile, ProjectCovers, VideoLibrary } from "../api";
 import { professionalLinks, projectLinks } from "../config/profileLinks";
@@ -37,20 +37,20 @@ const projectDetails: Record<string, { cover: string; flow: string; architecture
 
 type Project = Profile["projects"][number];
 
-function ProjectCover({ project, revision, decorative = false }: { project: Project; revision?: string; decorative?: boolean }) {
+function ProjectCover({ project, revision }: { project: Project; revision?: string }) {
   const [failed, setFailed] = useState<string[]>([]);
   const cover = projectDetails[project.id]?.cover ?? project.title.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase()
     .replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
   const sources = [revision ? projectCoverUrl(project.id, revision) : "", encodeURI(`/assets/projetos/${cover}.png`)];
   const src = sources.find((candidate) => candidate && !failed.includes(candidate));
-  return <div className="project-cover" aria-hidden={decorative || undefined}>
-    {src ? <img key={src} src={src} alt={decorative ? "" : `Capa de ${project.title}`} loading="lazy" onError={() => setFailed((current) => [...current, src])} />
-      : <Image size={38} aria-hidden="true" />}
+  return <div className="project-cover" aria-hidden="true">
+    {src ? <img key={src} src={src} alt="" loading="lazy" onError={() => setFailed((current) => [...current, src])} />
+      : <Image size={38} />}
   </div>;
 }
 
-function ProjectCard({ project, revision, hasVideo, onArchitecture, onVideo }: {
-  project: Project; revision?: string; hasVideo: boolean; onArchitecture: () => void; onVideo: () => void;
+function ProjectCard({ project, revision, onArchitecture }: {
+  project: Project; revision?: string; onArchitecture: () => void;
 }) {
   const [run, setRun] = useState(0);
   const [length, setLength] = useState(project.summary.length);
@@ -72,7 +72,7 @@ function ProjectCard({ project, revision, hasVideo, onArchitecture, onVideo }: {
   return (
     <article className="panel project showcase-project" onMouseEnter={() => setRun((current) => current + 1)}
       onFocus={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setRun((current) => current + 1); }}>
-      <ProjectCover project={project} revision={revision} decorative />
+      <ProjectCover project={project} revision={revision} />
       <h4>{project.title}</h4>
       <p className="typewriter">
         <span className="typewriter-reserve" aria-hidden="true">{project.summary}</span>
@@ -86,7 +86,6 @@ function ProjectCard({ project, revision, hasVideo, onArchitecture, onVideo }: {
         {links?.credly && <a href={links.credly} target="_blank" rel="noopener noreferrer">Credly <ArrowUpRight size={15} /></a>}
         {details?.architecture ? <a href={details.architecture}><Network size={15} /> Arquitetura</a>
           : details && <button type="button" className="feature-link" onClick={onArchitecture}><Network size={15} /> Arquitetura</button>}
-        {hasVideo && <button type="button" className="feature-link" onClick={onVideo}><Video size={15} /> Assistir demonstração</button>}
       </div>
     </article>
   );
@@ -94,19 +93,8 @@ function ProjectCard({ project, revision, hasVideo, onArchitecture, onVideo }: {
 
 export default function ProjectShowcase({ profile, videos, covers }: { profile: Profile; videos: VideoLibrary; covers: ProjectCovers }) {
   const dialog = useRef<HTMLDialogElement>(null);
-  const featureHeading = useRef<HTMLHeadingElement>(null);
   const [selected, setSelected] = useState<Project | null>(null);
-  const [featuredId, setFeaturedId] = useState("nicolas-hub");
-  const [slide, setSlide] = useState(0);
-  const featured = profile.projects.find((project) => project.id === featuredId) ?? profile.projects[0];
-  const featuredVideos = featured ? videos[featured.id] ?? [] : [];
-  const slideCount = 1 + featuredVideos.length;
-  const activeSlide = Math.min(slide, slideCount - 1);
-
-  function selectProject(project: Project, nextSlide: number) {
-    setFeaturedId(project.id);
-    setSlide(nextSlide);
-  }
+  const introVideo = videos["nicolas-hub"]?.at(-1);
 
   function show(project: Project) {
     setSelected(project);
@@ -117,33 +105,13 @@ export default function ProjectShowcase({ profile, videos, covers }: { profile: 
       <div className="shell">
         <div className="chapter-kicker"><Layers3 size={16} /> Portfólio</div>
         <h3 className="extended-subtitle">Projetos</h3>
-        {featured && <section className="project-feature" aria-labelledby="featured-project-title">
-          <div className="project-feature-heading">
-            <h4 id="featured-project-title" ref={featureHeading} tabIndex={-1}>{featured.title}</h4>
-            {projectLinks[featured.id]?.github && <a className="feature-link" href={projectLinks[featured.id]?.github} target="_blank" rel="noopener noreferrer"><ProfessionalIcon label="GitHub" /> Repositório GitHub <ArrowUpRight size={15} /></a>}
-          </div>
-          <div className="project-feature-media">
-            {activeSlide === 0 ? <ProjectCover key={featured.id} project={featured} revision={covers[featured.id]} />
-              : <ProjectVideo key={`${featured.id}:${activeSlide}`} title={featured.title} ids={[featuredVideos[activeSlide - 1]]} />}
-          </div>
-          {slideCount > 1 && <div className="project-feature-controls" role="group" aria-label="Alternar entre capa e vídeos">
-            <button className="icon-button" type="button" aria-label="Mídia anterior" onClick={() => setSlide((activeSlide + slideCount - 1) % slideCount)}><ChevronLeft size={20} /></button>
-            {Array.from({ length: slideCount }, (_, index) => <button type="button" className="project-media-dot" key={index}
-              aria-label={index === 0 ? "Exibir capa" : `Exibir vídeo ${index}`} aria-pressed={activeSlide === index} onClick={() => setSlide(index)} />)}
-            <button className="icon-button" type="button" aria-label="Próxima mídia" onClick={() => setSlide((activeSlide + 1) % slideCount)}><ChevronRight size={20} /></button>
-            <button type="button" className="feature-link" onClick={() => setSlide(activeSlide === 0 ? 1 : 0)}>
-              {activeSlide === 0 ? <><Video size={17} /> Assistir demonstração</> : <><Image size={17} /> Voltar à capa</>}
-            </button>
-          </div>}
-          <div className="project-feature-tabs" role="group" aria-label="Selecionar projeto em destaque">
-            {profile.projects.map((project) => <button type="button" key={project.id} className="button secondary small"
-              aria-pressed={featured.id === project.id} onClick={() => selectProject(project, 0)}>{project.title}</button>)}
-          </div>
+        {introVideo && <section className="project-intro" aria-labelledby="project-intro-title">
+          <h4 id="project-intro-title">Nicolas Hub</h4>
+          <ProjectVideo title="Nicolas Hub" ids={[introVideo]} />
         </section>}
         <div className="card-grid chapter-cards">
           {profile.projects.map((project) => <ProjectCard key={project.id} project={project}
-            revision={covers[project.id]} hasVideo={Boolean(videos[project.id]?.length)} onArchitecture={() => show(project)}
-            onVideo={() => { selectProject(project, 1); featureHeading.current?.focus(); }} />)}
+            revision={covers[project.id]} onArchitecture={() => show(project)} />)}
         </div>
       </div>
       <dialog ref={dialog} className="showcase-dialog" aria-labelledby="project-architecture-title" onClose={() => setSelected(null)}>
