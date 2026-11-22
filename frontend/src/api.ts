@@ -95,6 +95,7 @@ export interface AdminSession {
 
 export type VideoLibrary = Record<string, string[]>;
 export type ProjectCovers = Record<string, string>;
+export type PublicNote = { id: string; folder_id: string; folder_name: string; title: string; tags: string; body: string };
 
 /**
  * Parses JSON API responses and raises a readable error for non-success statuses.
@@ -248,6 +249,20 @@ function postWithToken<T>(path: string, token: string, payload: object): Promise
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
+}
+
+const notesPath = "/api/v1/hub/notes";
+
+export function getPublishedNotes(signal?: AbortSignal) {
+  return requestJson<PublicNote[]>(notesPath, { signal, cache: "no-store" });
+}
+
+export function publishNote(note: PublicNote, token: string) {
+  return postWithToken<PublicNote>(notesPath, token, note);
+}
+
+export function unpublishNote(id: string, token: string) {
+  return requestJson(`${notesPath}/${encodeURIComponent(id)}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
 }
 
 export function getStudyMaterial(topic: Topic, notes: string, count: number, token: string, previousPrompts: string[] = []) {

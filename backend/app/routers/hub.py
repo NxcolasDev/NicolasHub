@@ -8,13 +8,13 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Response
 from PIL import Image, ImageOps
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.domain import ProjectCover, ProjectVideo
+from app.models.domain import ProjectCover, ProjectVideo, PublishedNote
 from app.security import admin_session_expiration, get_current_user
 
 router = APIRouter(prefix="/hub", tags=["hub"])
@@ -31,6 +31,70 @@ VideoProject = Literal[
 class ProjectVideoInput(BaseModel):
     project: VideoProject
     video_id: str = Field(min_length=11, max_length=11, pattern=r"^[A-Za-z0-9_-]+$")
+
+
+NoteID = Annotated[
+    str, StringConstraints(min_length=1, max_length=64, pattern=r"^[A-Za-z0-9_-]+$")
+]
+
+
+class PublicNote(BaseModel):
+    model_config = ConfigDict(from_attributes=True, str_strip_whitespace=True)
+
+    id: NoteID
+    folder_id: NoteID
+    folder_name: str = Field(min_length=1, max_length=120)
+    title: str = Field(min_length=1, max_length=120)
+    tags: str = Field(max_length=160)
+    body: str = Field(min_length=1, max_length=12000)
+
+
+@router.get("/notes", response_model=list[PublicNote])
+def get_public_notes(db: Annotated[Session, Depends(get_db)]) -> list[PublishedNote]:
+    return list(
+        db.scalars(
+            select(PublishedNote).order_by(
+                PublishedNote.folder_name, PublishedNote.title
+            )
+        )
+    )
+
+
+@router.post(
+    "/notes",
+    response_model=PublicNote,
+    dependencies=[Depends(admin_session_expiration), Depends(get_current_user)],
+)
+def publish_note(
+    payload: PublicNote, db: Annotated[Session, Depends(get_db)]
+) -> PublicNote:
+    db.execute(
+        text("""
+        INSERT INTO published_notes (id, folder_id, folder_name, title, tags, body)
+        VALUES (:id, :folder_id, :folder_name, :title, :tags, :body)
+        ON CONFLICT (id) DO UPDATE SET folder_id = EXCLUDED.folder_id,
+        folder_name = EXCLUDED.folder_name, title = EXCLUDED.title,
+        tags = EXCLUDED.tags, body = EXCLUDED.body
+    """),
+        payload.model_dump(),
+    )
+    db.commit()
+    return payload
+
+
+@router.delete(
+    "/notes/{note_id}",
+    status_code=204,
+    dependencies=[Depends(admin_session_expiration), Depends(get_current_user)],
+)
+def unpublish_note(
+    note_id: NoteID, db: Annotated[Session, Depends(get_db)]
+) -> Response:
+    note = db.get(PublishedNote, note_id)
+    if note is not None:
+        db.delete(note)
+        db.commit()
+    return Response(status_code=204)
 
 
 @router.get("/profile")

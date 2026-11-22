@@ -4,11 +4,15 @@ from secrets import token_hex
 
 from fastapi.testclient import TestClient
 from PIL import Image
+from sqlalchemy import create_engine, select
+from sqlalchemy.orm import Session
 
-from app import limits
+from app import admin_account, limits
 from app.config import get_settings
+from app.database import Base
 from app.main import app
-from app.security import create_access_token
+from app.models.domain import User
+from app.security import create_access_token, verify_password
 from app.services.assistant import get_structured_assistant
 
 
@@ -175,6 +179,47 @@ def test_login_quota_returns_retry_after(client: TestClient, monkeypatch) -> Non
     response = client.post("/api/v1/auth/login", data=credentials)
     assert response.status_code == 429
     assert response.headers["retry-after"] == "56"
+
+
+def test_note_publication_is_readable_by_visitors(client: TestClient) -> None:
+    session = _login(client)
+    client.headers.pop("X-Admin-Key")
+    path = "/api/v1/hub/notes"
+    note = {
+        "id": "leaf-1",
+        "folder_id": "cloud",
+        "folder_name": "Cloud",
+        "title": "Cloud Run",
+        "tags": "GCP",
+        "body": "## Revisão",
+    }
+    assert client.get(path).json() == []
+    assert client.post(path, json=note).status_code == 401
+    assert client.post(path, json=note, headers=session).json() == note
+    revised = {**note, "body": "## Atualização"}
+    assert client.post(path, json=revised, headers=session).json() == revised
+    assert client.get(path).json() == [revised]
+    assert client.delete(f"{path}/leaf-1").status_code == 401
+    assert client.delete(f"{path}/leaf-1", headers=session).status_code == 204
+    assert client.get(path).json() == []
+
+
+def test_admin_account_command_creates_and_resets_password(monkeypatch) -> None:
+    engine = create_engine("sqlite://")
+    Base.metadata.create_all(engine)
+    monkeypatch.setattr(
+        admin_account, "create_engine", lambda *_args, **_kwargs: engine
+    )
+    monkeypatch.setattr("builtins.input", lambda _prompt: "admin@example.com")
+    for password in ("first-test-password", "second-test-password"):
+        values = iter(("postgresql://example.invalid/test", password, password))
+        monkeypatch.setattr(admin_account, "getpass", lambda _prompt: next(values))
+        admin_account.main()
+        with Session(engine) as db:
+            user = db.scalars(select(User)).one()
+            assert user.email == "admin@example.com"
+            assert verify_password(password, user.hashed_password)
+    engine.dispose()
 
 
 def test_project_cover_requires_admin_and_replaces_published_image(

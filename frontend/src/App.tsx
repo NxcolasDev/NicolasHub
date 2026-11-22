@@ -277,7 +277,7 @@ export default function App() {
           onRetry: () => setVideoLoadAttempt((current) => current + 1) }} />}
         {academy && <Academy key={workspaceVersion} view={academy} token={token} onSignIn={signIn} />}
         {career && <Career key={workspaceVersion} profile={profile} token={token} openAnalysis={hash === "#analisar-vaga"} />}
-        {notes && <Suspense fallback={<p role="status">Abrindo o caderno…</p>}><Notes admin={Boolean(token)} /></Suspense>}
+        {notes && <Suspense fallback={<p role="status">Abrindo o caderno…</p>}><Notes token={token} /></Suspense>}
         {profileError && (portfolio || career) && (
           <div className={portfolio ? "shell actions profile-retry no-print" : "actions no-print"} role="status"><p className="muted">Dados do perfil indisponíveis.</p>
             <button type="button" className="button secondary" onClick={() => setLoadAttempt((current) => current + 1)}>Recarregar perfil</button>

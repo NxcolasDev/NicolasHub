@@ -10,6 +10,7 @@ from sqlalchemy import (
     Integer,
     LargeBinary,
     String,
+    Text,
     UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -78,3 +79,14 @@ class ProjectCover(Base):
     project: Mapped[str] = mapped_column(String(32), primary_key=True)
     revision: Mapped[str] = mapped_column(String(20))
     image: Mapped[bytes] = mapped_column(LargeBinary)
+
+
+class PublishedNote(Base):
+    __tablename__ = "published_notes"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    folder_id: Mapped[str] = mapped_column(String(64))
+    folder_name: Mapped[str] = mapped_column(String(120))
+    title: Mapped[str] = mapped_column(String(120))
+    tags: Mapped[str] = mapped_column(String(160))
+    body: Mapped[str] = mapped_column(Text)

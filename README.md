@@ -286,6 +286,18 @@ conta e a chave. A sessão expira e a troca da chave invalida tokens
 administrativos anteriores. Habilite Gemini à parte, com a credencial
 restrita ao servidor e dentro da franquia da conta.
 
+Para criar a conta no Neon ou redefinir a senha de uma conta existente sem
+abrir o cadastro, rode na raiz do repositório:
+
+```sh
+docker compose build api
+docker compose run --rm --no-deps --entrypoint python api -m app.admin_account
+```
+
+Informe a URL do Neon usada no Render, o e-mail e a nova senha nos prompts.
+A URL e a senha são digitadas em modo oculto. Para entrar no site use a
+`ADMIN_SECRET_KEY` configurada no Render junto com o e-mail e a nova senha.
+
 Em **Arquitetura → Vídeos**, uma sessão administrativa permite publicar links
 de vídeos do YouTube. O banco armazena o identificador do vídeo, que aparece
 para visitantes na aba Arquitetura. Vídeos cadastrados na
@@ -296,6 +308,10 @@ No mesmo painel, **Adicionar ou trocar a capa** publica uma imagem PNG, JPEG ou
 WebP de até 4 MB. O backend redimensiona e grava a imagem no PostgreSQL.
 Em **Portfólio → Projetos**, o vídeo mais recente publicado para o Nicolas Hub
 aparece acima da grade de projetos com capas.
+
+Em **Notes**, o admin pode salvar rascunhos locais e usar **Publicar para
+visitantes** nas folhas escolhidas. As folhas publicadas ficam no PostgreSQL
+e podem ser lidas sem login. O admin pode atualizar ou retirar a publicação.
 
 **Testes e lint:**
 

@@ -88,7 +88,7 @@ export default function ArchitectureVideos({ library, status, onPublish, onPubli
     setFeedback("");
     try {
       for (const id of videoIds) await onPublish(selected, id);
-      setFeedback(`Vídeos de ${projects[selected]} atualizados no Portfólio e em Arquitetura.`);
+      setFeedback(`Vídeos de ${projects[selected]} publicados para visitantes.`);
       onSuccess?.();
     } catch (failure) {
       setFeedback(failure instanceof Error ? failure.message : "Não foi possível publicar o vídeo.");
@@ -141,7 +141,7 @@ export default function ArchitectureVideos({ library, status, onPublish, onPubli
         <input id="video-url" name="video-url" type="url" maxLength={1000} placeholder="https://youtu.be/…" required />
         <button type="submit" className="button primary small" disabled={busy || status !== "ready"}>{busy ? "Publicando…" : "Publicar vídeo"}</button>
       </form>
-      <p className="muted">O vídeo ficará visível para visitantes no Portfólio e em Arquitetura.</p>
+      <p className="muted">Visitantes podem assistir em Arquitetura. O vídeo mais recente do Nicolas Hub também aparece em Projetos.</p>
       {unpublished.length > 0 && <button type="button" className="button secondary small" disabled={busy || status !== "ready"}
         onClick={() => void publish(unpublished)}>Publicar vídeos salvos neste navegador ({unpublished.length})</button>}
     </details>}
