@@ -175,6 +175,7 @@
 .project-player select { margin: 0 0 8px 6px; padding: 5px 8px; border: 1px solid var(--line); background: var(--panel); }
 .project-player iframe { width: 100%; min-height: 200px; aspect-ratio: 16 / 9; border: 1px solid var(--line); border-radius: .75rem; background: #080c0a; }
 .project-player > a { display: inline-block; margin-top: 6px; font-size: .85rem; }
+.project-player .remove-video { margin: 6px 0 0 .75rem; }
 .professional-icon { box-sizing: content-box; inline-size: 1em; block-size: 1em; flex: 0 0 auto; }
 .professional-icon.github { filter: invert(1); }
 .professional-icon.linkedin { background: #eef7ff; border-radius: 2px; padding: 1px; }

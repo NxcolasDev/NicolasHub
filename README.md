@@ -304,6 +304,8 @@ para visitantes na aba Arquitetura. Vídeos cadastrados na
 versão anterior podem ser publicados pelo botão **Publicar vídeos salvos neste
 navegador**. Use o mesmo navegador e endereço em que foram cadastrados ou cole
 os links no endereço do deploy para publicá-los no banco de produção.
+Para remover um link, selecione o vídeo em **Arquitetura → Vídeos** como admin
+e clique em **Excluir link do vídeo**.
 No mesmo painel, **Adicionar ou trocar a capa** publica uma imagem PNG, JPEG ou
 WebP de até 4 MB. O backend redimensiona e grava a imagem no PostgreSQL.
 Em **Portfólio → Projetos**, o vídeo mais recente publicado para o Nicolas Hub

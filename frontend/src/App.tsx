@@ -1,7 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { ArrowUpRight, BriefcaseBusiness, Cloud, LayoutGrid, LogIn, LogOut, Network, NotebookPen, X } from "lucide-react";
-import { ApiError, authenticate, getHealth, getProfile, getProjectCovers, getProjectVideos, publishProjectCover, publishProjectVideo, verifyAdminSession } from "./api";
+import { ApiError, authenticate, getHealth, getProfile, getProjectCovers, getProjectVideos, publishProjectCover, publishProjectVideo, removeProjectVideo, verifyAdminSession } from "./api";
 import type { AdminSession, Profile, ProjectCovers, VideoLibrary } from "./api";
 import Academy from "./components/Academy";
 import type { AcademyView } from "./components/Academy";
@@ -222,6 +222,11 @@ export default function App() {
     });
   }
 
+  async function removeVideo(project: string, id: string) {
+    await removeProjectVideo(project, id, token);
+    setVideos((library) => ({ ...library, [project]: (library[project] ?? []).filter((video) => video !== id) }));
+  }
+
   async function publishCover(project: string, file: File) {
     const cover = await publishProjectCover(project, file, token);
     setCovers((current) => ({ ...current, [cover.project]: cover.revision }));
@@ -273,7 +278,8 @@ export default function App() {
       <main className={portfolio ? "portfolio-main" : "shell main-content"}>
         {portfolio && <Portfolio profile={profile} admin={Boolean(token)} videos={videos} covers={covers} />}
         {architecture && <Architecture key={search} videos={{ library: videos, status: videosStatus,
-          onPublish: token ? publishVideo : undefined, onPublishCover: token ? publishCover : undefined,
+          onPublish: token ? publishVideo : undefined, onRemove: token ? removeVideo : undefined,
+          onPublishCover: token ? publishCover : undefined,
           onRetry: () => setVideoLoadAttempt((current) => current + 1) }} />}
         {academy && <Academy key={workspaceVersion} view={academy} token={token} onSignIn={signIn} />}
         {career && <Career key={workspaceVersion} profile={profile} token={token} openAnalysis={hash === "#analisar-vaga"} />}

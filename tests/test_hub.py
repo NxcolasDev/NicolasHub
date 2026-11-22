@@ -171,6 +171,34 @@ def test_project_videos_require_admin_session_and_are_public(
     assert client.get(path).json() == {"nicolas-hub": [video["video_id"]]}
 
 
+def test_project_video_removal_requires_admin_and_is_scoped(client: TestClient) -> None:
+    admin = _login(client)
+    path = "/api/v1/hub/project-videos"
+    target = "aBcd123_-EF"
+    remaining = "zYxu456_-HG"
+    for project, video_id in (
+        ("nicolas-hub", target),
+        ("nicolas-hub", remaining),
+        ("corner", target),
+    ):
+        assert (
+            client.post(
+                path, json={"project": project, "video_id": video_id}, headers=admin
+            ).status_code
+            == 200
+        )
+    endpoint = f"{path}/nicolas-hub/{target}"
+    assert client.delete(endpoint).status_code == 401
+    client.headers.pop("X-Admin-Key")
+    assert client.delete(endpoint).status_code == 401
+    assert (
+        client.delete(f"{path}/nicolas-hub/invalid", headers=admin).status_code == 422
+    )
+    for _ in range(2):
+        assert client.delete(endpoint, headers=admin).status_code == 204
+    assert client.get(path).json() == {"nicolas-hub": [remaining], "corner": [target]}
+
+
 def test_login_quota_returns_retry_after(client: TestClient, monkeypatch) -> None:
     monkeypatch.setattr(get_settings(), "rate_limit_login", 1)
     monkeypatch.setattr(limits, "time", lambda: 604)

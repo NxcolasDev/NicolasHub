@@ -217,13 +217,21 @@ export function getJobFair(signal?: AbortSignal): Promise<JobFair> {
   return requestJson("/api/v1/hub/job-fair", { signal });
 }
 
+const projectVideosPath = "/api/v1/hub/project-videos";
+
 export function getProjectVideos(signal?: AbortSignal): Promise<VideoLibrary> {
-  return requestJson("/api/v1/hub/project-videos", { signal, cache: "no-store" });
+  return requestJson(projectVideosPath, { signal, cache: "no-store" });
 }
 
 export function publishProjectVideo(project: string, videoId: string, token: string) {
-  return postWithToken<{ project: string; video_id: string }>("/api/v1/hub/project-videos", token, {
+  return postWithToken<{ project: string; video_id: string }>(projectVideosPath, token, {
     project, video_id: videoId,
+  });
+}
+
+export function removeProjectVideo(project: string, videoId: string, token: string) {
+  return requestJson(`${projectVideosPath}/${encodeURIComponent(project)}/${encodeURIComponent(videoId)}`, {
+    method: "DELETE", headers: { Authorization: `Bearer ${token}` },
   });
 }
 

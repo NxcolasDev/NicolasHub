@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Video } from "lucide-react";
+import { Trash2, Video } from "lucide-react";
 import type { VideoLibrary } from "../api";
 
 const projects = {
@@ -49,17 +49,22 @@ function extractVideoId(value: string): string | null {
   } catch { return null; }
 }
 
-export function ProjectVideo({ title, ids }: { title: string; ids: string[] }) {
+export function ProjectVideo({ title, ids, onRemove, busy = false }: {
+  title: string; ids: string[]; onRemove?: (id: string) => void; busy?: boolean;
+}) {
   const [selected, setSelected] = useState(ids[ids.length - 1]);
   const video = ids.includes(selected) ? selected : ids[ids.length - 1];
   if (!video) return null;
   return <div className="project-player">
-    {ids.length > 1 && <label>Vídeo de {title} <select value={video} onChange={(event) => setSelected(event.target.value)}>
+    {ids.length > 1 && <label>Vídeo de {title} <select value={video} disabled={busy} onChange={(event) => setSelected(event.target.value)}>
       {ids.map((id, index) => <option key={id} value={id}>Vídeo {index + 1}</option>)}
     </select></label>}
     <iframe key={video} src={`https://www.youtube-nocookie.com/embed/${video}`} title={`Vídeo de ${title}`}
       loading="lazy" referrerPolicy="strict-origin-when-cross-origin" allow="encrypted-media; picture-in-picture" allowFullScreen />
     <a className="feature-link" href={`https://www.youtube.com/watch?v=${video}`} target="_blank" rel="noreferrer">Abrir no YouTube</a>
+    {onRemove && <button type="button" className="button secondary small remove-video" disabled={busy} onClick={() => onRemove(video)}>
+      <Trash2 size={15} /> Excluir link do vídeo
+    </button>}
   </div>;
 }
 
@@ -67,16 +72,17 @@ export interface ArchitectureVideosProps {
   library: VideoLibrary;
   status: "loading" | "ready" | "error";
   onPublish?: (project: string, id: string) => Promise<void>;
+  onRemove?: (project: string, id: string) => Promise<void>;
   onPublishCover?: (project: string, file: File) => Promise<void>;
   onRetry: () => void;
 }
 
-export default function ArchitectureVideos({ library, status, onPublish, onPublishCover, onRetry }: ArchitectureVideosProps) {
+export default function ArchitectureVideos({ library, status, onPublish, onRemove, onPublishCover, onRetry }: ArchitectureVideosProps) {
   const [selected, setSelected] = useState<VideoProject>(() => {
     const project = new URLSearchParams(location.search).get("video");
     return isProject(project) ? project : "nicolas-hub";
   });
-  const [localVideos] = useState(readLocalVideos);
+  const [localVideos, setLocalVideos] = useState(readLocalVideos);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState("");
   const ids = library[selected] ?? [];
@@ -92,6 +98,24 @@ export default function ArchitectureVideos({ library, status, onPublish, onPubli
       onSuccess?.();
     } catch (failure) {
       setFeedback(failure instanceof Error ? failure.message : "Não foi possível publicar o vídeo.");
+    } finally { setBusy(false); }
+  }
+
+  async function remove(id: string) {
+    if (!onRemove || busy) return;
+    setBusy(true);
+    setFeedback("");
+    try {
+      await onRemove(selected, id);
+      if (localVideos[selected]?.includes(id)) {
+        const next = { ...localVideos, [selected]: localVideos[selected].filter((video) => video !== id) };
+        setLocalVideos(next);
+        try { localStorage.setItem(storageKey, JSON.stringify(next)); }
+        catch { /* The server has already removed the video. */ }
+      }
+      setFeedback(`Link do vídeo removido de ${projects[selected]}.`);
+    } catch (failure) {
+      setFeedback(failure instanceof Error ? failure.message : "Não foi possível excluir o link.");
     } finally { setBusy(false); }
   }
 
@@ -132,7 +156,8 @@ export default function ArchitectureVideos({ library, status, onPublish, onPubli
     {status === "loading" && <p role="status" className="muted">Carregando vídeos…</p>}
     {status === "error" && <div className="actions"><p className="muted">Não foi possível carregar os vídeos.</p>
       <button type="button" className="button secondary small" onClick={onRetry}>Tentar novamente</button></div>}
-    {ids.length > 0 ? <ProjectVideo key={`${selected}:${ids.length}`} title={projects[selected]} ids={ids} />
+    {ids.length > 0 ? <ProjectVideo key={`${selected}:${ids.length}`} title={projects[selected]} ids={ids}
+      onRemove={onRemove && status === "ready" ? (id) => void remove(id) : undefined} busy={busy} />
       : status === "ready" && <p className="muted">Nenhum vídeo disponível para {projects[selected]}.</p>}
     {onPublish && <details className="video-form">
       <summary>Cadastrar vídeo em {projects[selected]}</summary>

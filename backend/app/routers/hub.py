@@ -9,7 +9,7 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Body, Depends, HTTPException, Response
 from PIL import Image, ImageOps
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
-from sqlalchemy import select, text
+from sqlalchemy import delete, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -26,11 +26,12 @@ PORTFOLIO_PROJECTS = {project["id"] for project in PROFILE["projects"]}
 VideoProject = Literal[
     "nicolas-hub", "gestoriq", "elan", "corner", "mensageria", "recora", "ia"
 ]
+VideoID = Annotated[str, StringConstraints(pattern=r"^[A-Za-z0-9_-]{11}$")]
 
 
 class ProjectVideoInput(BaseModel):
     project: VideoProject
-    video_id: str = Field(min_length=11, max_length=11, pattern=r"^[A-Za-z0-9_-]+$")
+    video_id: VideoID
 
 
 NoteID = Annotated[
@@ -137,6 +138,25 @@ def publish_project_video(
             if db.scalar(existing) is None:
                 raise
     return payload
+
+
+@router.delete(
+    "/project-videos/{project}/{video_id}",
+    status_code=204,
+    dependencies=[Depends(admin_session_expiration), Depends(get_current_user)],
+)
+def remove_project_video(
+    project: VideoProject,
+    video_id: VideoID,
+    db: Annotated[Session, Depends(get_db)],
+) -> Response:
+    db.execute(
+        delete(ProjectVideo).where(
+            ProjectVideo.project == project, ProjectVideo.video_id == video_id
+        )
+    )
+    db.commit()
+    return Response(status_code=204)
 
 
 @router.get("/project-covers")
