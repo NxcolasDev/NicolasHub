@@ -1,5 +1,5 @@
 export const professionalLinks = {
-  LinkedIn: "https://www.linkedin.com/in/nicolas-de-jesus-silva",
+  LinkedIn: "https://www.linkedin.com/in/nxcolasdev",
   GitHub: "https://github.com/NxcolasDev",
   Credly: "",
 };

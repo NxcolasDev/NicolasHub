@@ -8,6 +8,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    LargeBinary,
     String,
     UniqueConstraint,
 )
@@ -69,3 +70,11 @@ class ProjectVideo(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     project: Mapped[str] = mapped_column(String(32))
     video_id: Mapped[str] = mapped_column(String(11))
+
+
+class ProjectCover(Base):
+    __tablename__ = "project_covers"
+
+    project: Mapped[str] = mapped_column(String(32), primary_key=True)
+    revision: Mapped[str] = mapped_column(String(20))
+    image: Mapped[bytes] = mapped_column(LargeBinary)

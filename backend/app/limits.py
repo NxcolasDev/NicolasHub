@@ -20,6 +20,7 @@ from app.security import get_current_user
 _lock = Lock()
 _window = -1
 _counts: dict[str, int] = {}
+PROJECT_COVER_MAX_BYTES = 4 * 1024 * 1024
 
 _increment = text("""
     INSERT INTO request_rate_limits (bucket, window_id, hits)
@@ -106,13 +107,18 @@ class RequestBodyLimit:
             await self.app(scope, receive, send)
             return
 
+        maximum = self.maximum
+        if scope["method"] == "PUT" and scope["path"].startswith(
+            "/api/v1/hub/project-covers/"
+        ):
+            maximum = PROJECT_COVER_MAX_BYTES
         chunks = bytearray()
         while True:
             message = await receive()
             if message["type"] == "http.disconnect":
                 return
             body = message.get("body", b"")
-            if len(chunks) + len(body) > self.maximum:
+            if len(chunks) + len(body) > maximum:
                 await JSONResponse(
                     {"detail": "Requisição excede o tamanho permitido."}, 413
                 )(scope, receive, send)

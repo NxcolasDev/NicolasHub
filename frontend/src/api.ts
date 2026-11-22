@@ -94,6 +94,7 @@ export interface AdminSession {
 }
 
 export type VideoLibrary = Record<string, string[]>;
+export type ProjectCovers = Record<string, string>;
 
 /**
  * Parses JSON API responses and raises a readable error for non-success statuses.
@@ -222,6 +223,22 @@ export function getProjectVideos(signal?: AbortSignal): Promise<VideoLibrary> {
 export function publishProjectVideo(project: string, videoId: string, token: string) {
   return postWithToken<{ project: string; video_id: string }>("/api/v1/hub/project-videos", token, {
     project, video_id: videoId,
+  });
+}
+
+const projectCoversPath = "/api/v1/hub/project-covers";
+
+export function getProjectCovers(signal?: AbortSignal): Promise<ProjectCovers> {
+  return requestJson(projectCoversPath, { signal, cache: "no-store" });
+}
+
+export function projectCoverUrl(project: string, revision: string) {
+  return `${apiBase}${projectCoversPath}/${encodeURIComponent(project)}?v=${encodeURIComponent(revision)}`;
+}
+
+export function publishProjectCover(project: string, file: File, token: string) {
+  return requestJson<{ project: string; revision: string }>(`${projectCoversPath}/${encodeURIComponent(project)}`, {
+    method: "PUT", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/octet-stream" }, body: file,
   });
 }
 

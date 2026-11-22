@@ -1,8 +1,8 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { ArrowUpRight, BriefcaseBusiness, Cloud, LayoutGrid, LogIn, LogOut, Network, NotebookPen, X } from "lucide-react";
-import { ApiError, authenticate, getHealth, getProfile, getProjectVideos, publishProjectVideo, verifyAdminSession } from "./api";
-import type { AdminSession, Profile, VideoLibrary } from "./api";
+import { ApiError, authenticate, getHealth, getProfile, getProjectCovers, getProjectVideos, publishProjectCover, publishProjectVideo, verifyAdminSession } from "./api";
+import type { AdminSession, Profile, ProjectCovers, VideoLibrary } from "./api";
 import Academy from "./components/Academy";
 import type { AcademyView } from "./components/Academy";
 import Career from "./components/Career";
@@ -93,9 +93,11 @@ export default function App() {
   const expiresAt = session?.expiresAt;
   const [workspaceVersion, setWorkspaceVersion] = useState(0);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const projectsAnchorReady = hash === "#projetos" && profile !== null;
   const [profileError, setProfileError] = useState(false);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [videos, setVideos] = useState<VideoLibrary>({});
+  const [covers, setCovers] = useState<ProjectCovers>({});
   const [videosStatus, setVideosStatus] = useState<"loading" | "ready" | "error">("loading");
   const [videoLoadAttempt, setVideoLoadAttempt] = useState(0);
   const [health, setHealth] = useState<"checking" | "online" | "offline">("checking");
@@ -148,6 +150,14 @@ export default function App() {
   }, [videoLoadAttempt]);
 
   useEffect(() => {
+    const controller = new AbortController();
+    getProjectCovers(controller.signal).then((published) => {
+      if (!controller.signal.aborted) setCovers((current) => ({ ...published, ...current }));
+    }).catch(() => { /* The portfolio can use bundled covers while the API is unavailable. */ });
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
     const syncAddress = () => setAddress(window.location.href);
     function navigate(event: MouseEvent) {
       if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
@@ -179,7 +189,7 @@ export default function App() {
     const target = sectionAnchors.has(hash) ? document.getElementById(hash.slice(1)) : null;
     if (target) target.scrollIntoView();
     else window.scrollTo(0, 0);
-  }, [pathname, search, hash]);
+  }, [pathname, search, hash, projectsAnchorReady]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -210,6 +220,11 @@ export default function App() {
       const ids = library[video.project] ?? [];
       return ids.includes(video.video_id) ? library : { ...library, [video.project]: [...ids, video.video_id] };
     });
+  }
+
+  async function publishCover(project: string, file: File) {
+    const cover = await publishProjectCover(project, file, token);
+    setCovers((current) => ({ ...current, [cover.project]: cover.revision }));
   }
 
   function signIn() {
@@ -256,9 +271,10 @@ export default function App() {
         </div>
       </header>
       <main className={portfolio ? "portfolio-main" : "shell main-content"}>
-        {portfolio && <Portfolio profile={profile} admin={Boolean(token)} videos={videos} />}
+        {portfolio && <Portfolio profile={profile} admin={Boolean(token)} videos={videos} covers={covers} />}
         {architecture && <Architecture key={search} videos={{ library: videos, status: videosStatus,
-          onPublish: token ? publishVideo : undefined, onRetry: () => setVideoLoadAttempt((current) => current + 1) }} />}
+          onPublish: token ? publishVideo : undefined, onPublishCover: token ? publishCover : undefined,
+          onRetry: () => setVideoLoadAttempt((current) => current + 1) }} />}
         {academy && <Academy key={workspaceVersion} view={academy} token={token} onSignIn={signIn} />}
         {career && <Career key={workspaceVersion} profile={profile} token={token} openAnalysis={hash === "#analisar-vaga"} />}
         {notes && <Suspense fallback={<p role="status">Abrindo o caderno…</p>}><Notes admin={Boolean(token)} /></Suspense>}

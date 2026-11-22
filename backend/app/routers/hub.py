@@ -1,17 +1,20 @@
 """Public portfolio data and administrative publication of project videos."""
 
 import json
+from hashlib import sha256
+from io import BytesIO
 from pathlib import Path
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Body, Depends, HTTPException, Response
+from PIL import Image, ImageOps
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.domain import ProjectVideo
+from app.models.domain import ProjectCover, ProjectVideo
 from app.security import admin_session_expiration, get_current_user
 
 router = APIRouter(prefix="/hub", tags=["hub"])
@@ -19,7 +22,10 @@ _data_dir = Path(__file__).resolve().parents[1] / "data"
 PROFILE = json.loads((_data_dir / "profile.json").read_text(encoding="utf-8"))
 JOB_FAIR = json.loads((_data_dir / "job_fair.json").read_text(encoding="utf-8"))
 COMPANIES = {company["id"]: company for company in JOB_FAIR["companies"]}
-VideoProject = Literal["nicolas-hub", "gestoriq", "elan", "corner", "mensageria", "ia"]
+PORTFOLIO_PROJECTS = {project["id"] for project in PROFILE["projects"]}
+VideoProject = Literal[
+    "nicolas-hub", "gestoriq", "elan", "corner", "mensageria", "recora", "ia"
+]
 
 
 class ProjectVideoInput(BaseModel):
@@ -67,3 +73,69 @@ def publish_project_video(
             if db.scalar(existing) is None:
                 raise
     return payload
+
+
+@router.get("/project-covers")
+def list_project_covers(db: Annotated[Session, Depends(get_db)]) -> dict[str, str]:
+    return dict(db.execute(select(ProjectCover.project, ProjectCover.revision)).all())
+
+
+@router.get("/project-covers/{project}")
+def get_project_cover(
+    project: str, db: Annotated[Session, Depends(get_db)]
+) -> Response:
+    cover = db.get(ProjectCover, project) if project in PORTFOLIO_PROJECTS else None
+    if cover is None:
+        raise HTTPException(404, "Capa não encontrada.")
+    return Response(
+        cover.image,
+        media_type="image/webp",
+        headers={
+            "Cache-Control": "public, max-age=300",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
+
+
+@router.put(
+    "/project-covers/{project}",
+    dependencies=[Depends(admin_session_expiration), Depends(get_current_user)],
+)
+def publish_project_cover(
+    project: str,
+    body: Annotated[bytes, Body(media_type="application/octet-stream")],
+    db: Annotated[Session, Depends(get_db)],
+) -> dict[str, str]:
+    if project not in PORTFOLIO_PROJECTS:
+        raise HTTPException(404, "Projeto não encontrado.")
+    output = BytesIO()
+    try:
+        with Image.open(BytesIO(body), formats=["PNG", "JPEG", "WEBP"]) as source:
+            if max(source.size) > 4096 or source.width * source.height > 12_000_000:
+                raise HTTPException(
+                    422, "A capa deve ter até 4096 pixels por lado e 12 megapixels."
+                )
+            if getattr(source, "is_animated", False):
+                raise HTTPException(422, "Escolha uma imagem estática para a capa.")
+            oriented = ImageOps.exif_transpose(source)
+            oriented.thumbnail((1600, 1200), Image.Resampling.LANCZOS)
+            oriented.convert("RGB").save(
+                output, format="WEBP", quality=86, exif=b"", icc_profile=b""
+            )
+    except (OSError, ValueError, SyntaxError, Image.DecompressionBombError) as error:
+        raise HTTPException(
+            422, "Envie uma imagem PNG, JPEG ou WebP válida."
+        ) from error
+    image = output.getvalue()
+    revision = sha256(image).hexdigest()[:20]
+    db.execute(
+        text("""
+            INSERT INTO project_covers (project, revision, image)
+            VALUES (:project, :revision, :image)
+            ON CONFLICT (project) DO UPDATE
+            SET revision = EXCLUDED.revision, image = EXCLUDED.image
+            """),
+        {"project": project, "revision": revision, "image": image},
+    )
+    db.commit()
+    return {"project": project, "revision": revision}

@@ -1,7 +1,9 @@
 from datetime import datetime, timezone
+from io import BytesIO
 from secrets import token_hex
 
 from fastapi.testclient import TestClient
+from PIL import Image
 
 from app import limits
 from app.config import get_settings
@@ -173,6 +175,43 @@ def test_login_quota_returns_retry_after(client: TestClient, monkeypatch) -> Non
     response = client.post("/api/v1/auth/login", data=credentials)
     assert response.status_code == 429
     assert response.headers["retry-after"] == "56"
+
+
+def test_project_cover_requires_admin_and_replaces_published_image(
+    client: TestClient,
+) -> None:
+    session = _login(client)
+    path = "/api/v1/hub/project-covers/nicolas-hub"
+    upload_headers = {"Content-Type": "application/octet-stream"}
+    assert (
+        client.put(path, headers=upload_headers, content=b"not an image").status_code
+        == 401
+    )
+    client.headers.pop("X-Admin-Key")
+    assert client.get(path).status_code == 404
+    assert (
+        client.put(
+            path, headers={**session, **upload_headers}, content=b"<svg/>"
+        ).status_code
+        == 422
+    )
+    revisions = []
+    for color in ("green", "blue"):
+        png = BytesIO()
+        Image.new("RGB", (64, 32), color).save(png, format="PNG")
+        published = client.put(
+            path, headers={**session, **upload_headers}, content=png.getvalue()
+        )
+        assert published.status_code == 200
+        revisions.append(published.json()["revision"])
+    assert revisions[0] != revisions[1]
+    assert client.get("/api/v1/hub/project-covers").json() == {
+        "nicolas-hub": revisions[1]
+    }
+    cover = client.get(path)
+    assert cover.headers["content-type"] == "image/webp"
+    assert cover.headers["x-content-type-options"] == "nosniff"
+    assert Image.open(BytesIO(cover.content)).size == (64, 32)
 
 
 def test_study_and_career_are_authenticated_and_validate_provider_data(

@@ -9,6 +9,7 @@ const projects = {
   elan: "Élan",
   corner: "Corner",
   mensageria: "Mensageria Multi-Cloud",
+  recora: "RECORA",
   ia: "Uso de IA no dia a dia",
 };
 type VideoProject = keyof typeof projects;
@@ -66,10 +67,11 @@ export interface ArchitectureVideosProps {
   library: VideoLibrary;
   status: "loading" | "ready" | "error";
   onPublish?: (project: string, id: string) => Promise<void>;
+  onPublishCover?: (project: string, file: File) => Promise<void>;
   onRetry: () => void;
 }
 
-export default function ArchitectureVideos({ library, status, onPublish, onRetry }: ArchitectureVideosProps) {
+export default function ArchitectureVideos({ library, status, onPublish, onPublishCover, onRetry }: ArchitectureVideosProps) {
   const [selected, setSelected] = useState<VideoProject>(() => {
     const project = new URLSearchParams(location.search).get("video");
     return isProject(project) ? project : "nicolas-hub";
@@ -103,6 +105,24 @@ export default function ArchitectureVideos({ library, status, onPublish, onRetry
     void publish([id], () => form.reset());
   }
 
+  async function saveCover(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!onPublishCover || busy || selected === "ia") return;
+    const form = event.currentTarget;
+    const file = new FormData(form).get("cover-file");
+    if (!(file instanceof File) || !file.size) { setFeedback("Selecione uma imagem para a capa."); return; }
+    if (file.size > 4 * 1024 * 1024) { setFeedback("A imagem deve ter até 4 MB."); return; }
+    setBusy(true);
+    setFeedback("");
+    try {
+      await onPublishCover(selected, file);
+      form.reset();
+      setFeedback(`Capa de ${projects[selected]} publicada no Portfólio.`);
+    } catch (failure) {
+      setFeedback(failure instanceof Error ? failure.message : "Não foi possível publicar a capa.");
+    } finally { setBusy(false); }
+  }
+
   return <section id="videos" className="page-section panel architecture-videos" aria-labelledby="video-heading">
     <div className="section-heading"><Video size={21} /><h2 id="video-heading">Vídeos de arquitetura e projetos</h2></div>
     <div className="video-filters" role="group" aria-label="Filtrar vídeos por projeto">
@@ -124,6 +144,15 @@ export default function ArchitectureVideos({ library, status, onPublish, onRetry
       <p className="muted">O vídeo ficará visível para visitantes no Portfólio e em Arquitetura.</p>
       {unpublished.length > 0 && <button type="button" className="button secondary small" disabled={busy || status !== "ready"}
         onClick={() => void publish(unpublished)}>Publicar vídeos salvos neste navegador ({unpublished.length})</button>}
+    </details>}
+    {onPublishCover && selected !== "ia" && <details className="video-form">
+      <summary>Adicionar ou trocar a capa de {projects[selected]}</summary>
+      <form key={selected} onSubmit={saveCover}>
+        <label htmlFor="cover-file">Imagem de capa</label>
+        <input id="cover-file" name="cover-file" type="file" accept="image/png,image/jpeg,image/webp" required />
+        <p className="muted">PNG, JPEG ou WebP de até 4 MB.</p>
+        <button type="submit" className="button primary small" disabled={busy}>Publicar capa</button>
+      </form>
     </details>}
     {feedback && <p role="status">{feedback}</p>}
   </section>;

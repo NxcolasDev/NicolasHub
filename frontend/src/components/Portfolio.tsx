@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { ArrowDown, ArrowRight, ArrowUpRight, Cloud, Database, Dumbbell, Gamepad2, Terminal } from "lucide-react";
-import type { Profile, VideoLibrary } from "../api";
+import type { Profile, ProjectCovers, VideoLibrary } from "../api";
 import assets from "../data/assets.json";
 import { importantImage, skins } from "../data/sprites";
 import { AvatarStage } from "./PixelAvatar";
 import { professionalLinks, publicProfessionalLinks, referenceLinks } from "../config/profileLinks";
 import Certificates from "./Certificates";
 import ProjectShowcase from "./ProjectShowcase";
+import ProfessionalIcon from "./ProfessionalIcon";
 import LanguageSection from "./LanguageSection";
 
 const awsLogo = importantImage("aws.png");
@@ -159,7 +160,7 @@ function ExtendedLook({ profile }: { profile: Profile | null }) {
             </ul>}
             <div className="actions">
               <a className="button primary" href="/academia#provas">Revisar para provas <ArrowRight size={16} /></a>
-              {linkedIn && <a className="button secondary" href={linkedIn} target="_blank" rel="noopener noreferrer">Perfil e publicações no LinkedIn <ArrowUpRight size={16} /></a>}
+              {linkedIn && <a className="button secondary" href={linkedIn} target="_blank" rel="noopener noreferrer"><ProfessionalIcon label="LinkedIn" /> Perfil e publicações no LinkedIn <ArrowUpRight size={16} /></a>}
             </div>
           </div>
         </article>
@@ -207,7 +208,7 @@ function ExtendedLook({ profile }: { profile: Profile | null }) {
   );
 }
 
-export default function Portfolio({ profile, admin, videos }: { profile: Profile | null; admin: boolean; videos: VideoLibrary }) {
+export default function Portfolio({ profile, admin, videos, covers }: { profile: Profile | null; admin: boolean; videos: VideoLibrary; covers: ProjectCovers }) {
   const recora = profile?.projects.find((project) => project.id === "recora");
   return (
     <>
@@ -224,8 +225,9 @@ export default function Portfolio({ profile, admin, videos }: { profile: Profile
               <a className="button secondary" href="/academia#terminal"><Terminal size={17} /> Abrir Coding Gym</a>
             </div>
             <div className="profile-links">{publicProfessionalLinks.map((link) => (
-              <a key={link.label} href={link.url} target="_blank" rel="noopener noreferrer">{link.label} <ArrowUpRight size={15} /></a>
+              <a key={link.label} href={link.url} target="_blank" rel="noopener noreferrer"><ProfessionalIcon label={link.label} /> {link.label} <ArrowUpRight size={15} /></a>
             ))}</div>
+            <a className="feature-link" href="#projetos">Ver projetos e demonstrações <ArrowDown size={16} /></a>
           </div>
         </div>
       </section>
@@ -248,7 +250,7 @@ export default function Portfolio({ profile, admin, videos }: { profile: Profile
         </details>
       </Block>
 
-      {profile && <ProjectShowcase profile={profile} videos={videos} />}
+      {profile && <ProjectShowcase profile={profile} videos={videos} covers={covers} />}
 
       <Block id="recora" side={<AvatarStage skin={skins.recora} dialogue="Do primeiro contato à reativação, cada lead importa." />}>
         <div className="chapter-kicker"><Database size={17} /> Trabalho de Conclusão de Curso · UniFAAT</div>
