@@ -3,6 +3,7 @@ import { ArrowUpRight, BrainCircuit, Cloud, Database, GitBranch, Laptop, Network
 import { importantImage, skins } from "../data/sprites";
 import { AvatarStage } from "./PixelAvatar";
 import ArchitectureVideos from "./ArchitectureVideos";
+import type { ArchitectureVideosProps } from "./ArchitectureVideos";
 import { referenceLinks } from "../config/profileLinks";
 import { Diagram } from "./Portfolio";
 
@@ -28,7 +29,7 @@ const routes: { from: Node; to: Node; path: string; reference?: boolean }[] = [
   { from: "api", to: "gemini", path: "M367 246 V318" },
 ];
 
-export default function Architecture({ admin }: { admin: boolean }) {
+export default function Architecture({ videos }: { videos: ArchitectureVideosProps }) {
   const [selected, setSelected] = useState<Node>("api");
   const detail = nodes[selected];
   return (
@@ -74,7 +75,7 @@ export default function Architecture({ admin }: { admin: boolean }) {
         </div>
         <div className="actions"><a className="button secondary" href={referenceLinks.architecture} target="_blank" rel="noopener noreferrer">Documentação e Terraform <ArrowUpRight size={16} /></a></div>
       </section>
-      <ArchitectureVideos admin={admin} />
+      <ArchitectureVideos {...videos} />
       <section className="page-section">
         <div className="section-heading"><Network size={22} /><h2>Estudo de redes VPC</h2></div>
         <Diagram />

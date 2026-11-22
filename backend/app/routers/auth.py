@@ -14,10 +14,11 @@ from app.database import get_db
 from app.limits import client_ip, enforce_limit
 from app.models.domain import User
 from app.security import (
+    admin_session_expiration,
     create_access_token,
     get_current_user,
     hash_password,
-    require_admin,
+    require_admin_key,
     verify_password,
 )
 
@@ -50,6 +51,11 @@ class TokenResponse(BaseModel):
 
     access_token: str
     token_type: str = "bearer"
+
+
+class AdminSessionResponse(BaseModel):
+    admin: bool = True
+    expires_at: int
 
 
 @router.post(
@@ -96,6 +102,7 @@ def login(
     """Verifica credenciais do formulário e emite JWT."""
 
     enforce_limit(db, "login", client_ip(request), get_settings().rate_limit_login)
+    require_admin_key(request)
     if len(form.username) > 254 or len(form.password) > 128:
         raise HTTPException(422, "Revise as credenciais informadas.")
     try:
@@ -114,9 +121,11 @@ def login(
     return TokenResponse(access_token=create_access_token(str(user.id), admin=True))
 
 
-@router.get("/session", dependencies=[Depends(require_admin)])
+@router.get("/session", response_model=AdminSessionResponse)
 def admin_session(
-    _: Annotated[User, Depends(get_current_user)], response: Response
-) -> dict[str, bool]:
+    expires_at: Annotated[int, Depends(admin_session_expiration)],
+    _: Annotated[User, Depends(get_current_user)],
+    response: Response,
+) -> AdminSessionResponse:
     response.headers["Cache-Control"] = "no-store"
-    return {"admin": True}
+    return AdminSessionResponse(expires_at=expires_at)

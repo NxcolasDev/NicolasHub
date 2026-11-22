@@ -2,7 +2,15 @@
 
 from datetime import datetime, timezone
 
-from sqlalchemy import BigInteger, DateTime, ForeignKey, Index, Integer, String
+from sqlalchemy import (
+    BigInteger,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -50,3 +58,14 @@ class RequestRateLimit(Base):
     bucket: Mapped[str] = mapped_column(String(100), primary_key=True)
     window_id: Mapped[int] = mapped_column(BigInteger, index=True)
     hits: Mapped[int] = mapped_column(Integer)
+
+
+class ProjectVideo(Base):
+    __tablename__ = "project_videos"
+    __table_args__ = (
+        UniqueConstraint("project", "video_id", name="uq_project_videos_project_id"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    project: Mapped[str] = mapped_column(String(32))
+    video_id: Mapped[str] = mapped_column(String(11))

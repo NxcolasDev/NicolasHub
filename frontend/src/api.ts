@@ -82,6 +82,19 @@ export interface CareerAdvice {
   skills: string[];
 }
 
+export class ApiError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+  }
+}
+
+export interface AdminSession {
+  token: string;
+  expiresAt: number;
+}
+
+export type VideoLibrary = Record<string, string[]>;
+
 /**
  * Parses JSON API responses and raises a readable error for non-success statuses.
  */
@@ -103,7 +116,7 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
       typeof body.detail === "string"
         ? body.detail
         : `Request failed with HTTP ${response.status}`;
-    throw new Error(detail);
+    throw new ApiError(detail, response.status);
   }
   return body as T;
 }
@@ -162,26 +175,36 @@ export function askAssistant(prompt: string, token: string): Promise<AssistantRe
 }
 
 /**
- * Exchanges login/register data for a JWT while keeping the API key server-side.
+ * Exchanges credentials for a server-verified administrative session.
  */
 export async function authenticate(
   email: string,
   password: string,
   adminKey: string,
-): Promise<string> {
+): Promise<AdminSession> {
   const form = new URLSearchParams({ username: email, password });
   const response = await requestJson<{ access_token: string }>("/api/v1/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded", "X-Admin-Key": adminKey },
     body: form,
   });
-  return response.access_token;
+  if (typeof response?.access_token !== "string" || !response.access_token) {
+    throw new Error("A API não retornou uma sessão administrativa. Verifique a conexão com o backend.");
+  }
+  return verifyAdminSession(response.access_token);
 }
 
-export function verifyAdminSession(token: string, signal?: AbortSignal) {
-  return requestJson<{ admin: boolean }>("/api/v1/auth/session", {
+export async function verifyAdminSession(token: string, signal?: AbortSignal): Promise<AdminSession> {
+  const session = await requestJson<{ admin?: boolean; expires_at?: number }>("/api/v1/auth/session", {
     headers: { Authorization: `Bearer ${token}` }, signal, cache: "no-store",
   });
+  if (session?.admin === false) throw new ApiError("A sessão perdeu o acesso administrativo.", 403);
+  const expiresAt = Number(session?.expires_at) * 1000;
+  if (session?.admin !== true || typeof session.expires_at !== "number" || !Number.isSafeInteger(expiresAt)) {
+    throw new Error("A API retornou uma sessão administrativa inválida.");
+  }
+  if (expiresAt <= Date.now()) throw new ApiError("A sessão administrativa expirou.", 401);
+  return { token, expiresAt };
 }
 
 export function getProfile(signal?: AbortSignal): Promise<Profile> {
@@ -190,6 +213,16 @@ export function getProfile(signal?: AbortSignal): Promise<Profile> {
 
 export function getJobFair(signal?: AbortSignal): Promise<JobFair> {
   return requestJson("/api/v1/hub/job-fair", { signal });
+}
+
+export function getProjectVideos(signal?: AbortSignal): Promise<VideoLibrary> {
+  return requestJson("/api/v1/hub/project-videos", { signal, cache: "no-store" });
+}
+
+export function publishProjectVideo(project: string, videoId: string, token: string) {
+  return postWithToken<{ project: string; video_id: string }>("/api/v1/hub/project-videos", token, {
+    project, video_id: videoId,
+  });
 }
 
 function postWithToken<T>(path: string, token: string, payload: object): Promise<T> {

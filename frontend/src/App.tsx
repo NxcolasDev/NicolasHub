@@ -1,8 +1,8 @@
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { ArrowUpRight, BriefcaseBusiness, Cloud, LayoutGrid, LogIn, LogOut, Network, NotebookPen, X } from "lucide-react";
-import { authenticate, getHealth, getProfile, verifyAdminSession } from "./api";
-import type { Profile } from "./api";
+import { ApiError, authenticate, getHealth, getProfile, getProjectVideos, publishProjectVideo, verifyAdminSession } from "./api";
+import type { AdminSession, Profile, VideoLibrary } from "./api";
 import Academy from "./components/Academy";
 import type { AcademyView } from "./components/Academy";
 import Career from "./components/Career";
@@ -40,7 +40,7 @@ function AccountDialog({
   onConnect,
 }: {
   dialog: React.RefObject<HTMLDialogElement>;
-  onConnect: (token: string) => void;
+  onConnect: (session: AdminSession) => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -52,8 +52,8 @@ function AccountDialog({
     setBusy(true);
     setError("");
     try {
-      const token = await authenticate(String(fields.get("email")), String(fields.get("password")), String(fields.get("admin-key")));
-      onConnect(token);
+      const session = await authenticate(String(fields.get("email")), String(fields.get("password")), String(fields.get("admin-key")));
+      onConnect(session);
       dialog.current?.close();
       form.reset();
     } catch (failure) {
@@ -88,31 +88,64 @@ function AccountDialog({
 export default function App() {
   const [address, setAddress] = useState(window.location.href);
   const { pathname, search, hash } = new URL(address);
-  const [token, setToken] = useState("");
+  const [session, setSession] = useState<AdminSession | null>(null);
+  const token = session?.token ?? "";
+  const expiresAt = session?.expiresAt;
   const [workspaceVersion, setWorkspaceVersion] = useState(0);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [profileError, setProfileError] = useState(false);
   const [loadAttempt, setLoadAttempt] = useState(0);
+  const [videos, setVideos] = useState<VideoLibrary>({});
+  const [videosStatus, setVideosStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [videoLoadAttempt, setVideoLoadAttempt] = useState(0);
   const [health, setHealth] = useState<"checking" | "online" | "offline">("checking");
   const dialog = useRef<HTMLDialogElement>(null);
 
+  const disconnect = useCallback(() => {
+    sessionStorage.removeItem(tokenKey);
+    sessionStorage.removeItem(legacyTokenKey);
+    setSession(null);
+    setWorkspaceVersion((current) => current + 1);
+  }, []);
+
   useEffect(() => {
     const controller = new AbortController();
-    function restoreSession() {
+    let checking = false;
+    async function restoreSession() {
       const saved = loadToken();
-      if (!saved) return;
-      void verifyAdminSession(saved, controller.signal).then((session) => {
-        if (!controller.signal.aborted && sessionStorage.getItem(tokenKey) === saved) {
-          setToken(session.admin ? saved : "");
+      if (!saved || checking) return;
+      checking = true;
+      try {
+        const verified = await verifyAdminSession(saved, controller.signal);
+        if (!controller.signal.aborted && sessionStorage.getItem(tokenKey) === saved) setSession(verified);
+      } catch (failure) {
+        if (!controller.signal.aborted && sessionStorage.getItem(tokenKey) === saved &&
+            failure instanceof ApiError && [401, 403].includes(failure.status)) {
+          disconnect();
         }
-      }).catch(() => {
-        if (!controller.signal.aborted && sessionStorage.getItem(tokenKey) === saved) setToken("");
-      });
+      } finally { checking = false; }
     }
-    restoreSession();
+    void restoreSession();
     const timer = window.setInterval(restoreSession, 30_000);
     return () => { controller.abort(); window.clearInterval(timer); };
-  }, []);
+  }, [disconnect]);
+
+  useEffect(() => {
+    if (expiresAt === undefined) return;
+    const timer = window.setTimeout(disconnect, Math.max(0, expiresAt - Date.now()));
+    return () => window.clearTimeout(timer);
+  }, [expiresAt, disconnect]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setVideosStatus("loading");
+    getProjectVideos(controller.signal).then((library) => {
+      if (!controller.signal.aborted) { setVideos(library); setVideosStatus("ready"); }
+    }).catch(() => {
+      if (!controller.signal.aborted) setVideosStatus("error");
+    });
+    return () => controller.abort();
+  }, [videoLoadAttempt]);
 
   useEffect(() => {
     const syncAddress = () => setAddress(window.location.href);
@@ -171,11 +204,12 @@ export default function App() {
     return () => { active = false; window.clearInterval(timer); };
   }, []);
 
-  function disconnect() {
-    sessionStorage.removeItem(tokenKey);
-    sessionStorage.removeItem(legacyTokenKey);
-    setToken("");
-    setWorkspaceVersion((current) => current + 1);
+  async function publishVideo(project: string, id: string) {
+    const video = await publishProjectVideo(project, id, token);
+    setVideos((library) => {
+      const ids = library[video.project] ?? [];
+      return ids.includes(video.video_id) ? library : { ...library, [video.project]: [...ids, video.video_id] };
+    });
   }
 
   function signIn() {
@@ -222,8 +256,9 @@ export default function App() {
         </div>
       </header>
       <main className={portfolio ? "portfolio-main" : "shell main-content"}>
-        {portfolio && <Portfolio profile={profile} admin={Boolean(token)} />}
-        {architecture && <Architecture key={search} admin={Boolean(token)} />}
+        {portfolio && <Portfolio profile={profile} admin={Boolean(token)} videos={videos} />}
+        {architecture && <Architecture key={search} videos={{ library: videos, status: videosStatus,
+          onPublish: token ? publishVideo : undefined, onRetry: () => setVideoLoadAttempt((current) => current + 1) }} />}
         {academy && <Academy key={workspaceVersion} view={academy} token={token} onSignIn={signIn} />}
         {career && <Career key={workspaceVersion} profile={profile} token={token} openAnalysis={hash === "#analisar-vaga"} />}
         {notes && <Suspense fallback={<p role="status">Abrindo o caderno…</p>}><Notes admin={Boolean(token)} /></Suspense>}
@@ -239,7 +274,7 @@ export default function App() {
           <span className={`api-status ${health}`}><i />{health === "online" ? "API disponível" : health === "offline" ? "API indisponível" : "Conectando à API"}</span>
         </div>
       </footer>
-      <AccountDialog dialog={dialog} onConnect={(accessToken) => { sessionStorage.setItem(tokenKey, accessToken); setToken(accessToken); }} />
+      <AccountDialog dialog={dialog} onConnect={(verified) => { sessionStorage.setItem(tokenKey, verified.token); setSession(verified); }} />
     </>
   );
 }

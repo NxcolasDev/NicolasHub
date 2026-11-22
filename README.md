@@ -286,6 +286,13 @@ conta e a chave. A sessão expira e a troca da chave invalida tokens
 administrativos anteriores. Habilite Gemini à parte, com a credencial
 restrita ao servidor e dentro da franquia da conta.
 
+Em **Arquitetura → Vídeos**, uma sessão administrativa permite publicar links
+de vídeos do YouTube. O banco armazena o identificador do vídeo, que aparece
+para visitantes no card do projeto e na aba Arquitetura. Vídeos cadastrados na
+versão anterior podem ser publicados pelo botão **Publicar vídeos salvos neste
+navegador**. Use o mesmo navegador e endereço em que foram cadastrados ou cole
+os links no endereço do deploy para publicá-los no banco de produção.
+
 **Testes e lint:**
 
 ```powershell

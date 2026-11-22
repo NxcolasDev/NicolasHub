@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { ArrowDown, ArrowRight, ArrowUpRight, Cloud, Database, Dumbbell, Gamepad2, Terminal } from "lucide-react";
-import type { Profile } from "../api";
+import type { Profile, VideoLibrary } from "../api";
 import assets from "../data/assets.json";
 import { importantImage, skins } from "../data/sprites";
 import { AvatarStage } from "./PixelAvatar";
@@ -207,7 +207,7 @@ function ExtendedLook({ profile }: { profile: Profile | null }) {
   );
 }
 
-export default function Portfolio({ profile, admin }: { profile: Profile | null; admin: boolean }) {
+export default function Portfolio({ profile, admin, videos }: { profile: Profile | null; admin: boolean; videos: VideoLibrary }) {
   const recora = profile?.projects.find((project) => project.id === "recora");
   return (
     <>
@@ -248,7 +248,7 @@ export default function Portfolio({ profile, admin }: { profile: Profile | null;
         </details>
       </Block>
 
-      {profile && <ProjectShowcase profile={profile} />}
+      {profile && <ProjectShowcase profile={profile} videos={videos} />}
 
       <Block id="recora" side={<AvatarStage skin={skins.recora} dialogue="Do primeiro contato à reativação, cada lead importa." />}>
         <div className="chapter-kicker"><Database size={17} /> Trabalho de Conclusão de Curso · UniFAAT</div>

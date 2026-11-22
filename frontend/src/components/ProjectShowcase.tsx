@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, GitBranch, Image, Layers3, Network, Video, X } from "lucide-react";
-import type { Profile } from "../api";
+import type { Profile, VideoLibrary } from "../api";
 import { professionalLinks, projectLinks } from "../config/profileLinks";
-import { ProjectVideo, readVideoLibrary, videosForProject } from "./ArchitectureVideos";
+import { ProjectVideo } from "./ArchitectureVideos";
 
 const projectDetails: Record<string, { cover: string; flow: string; architecture?: string }> = {
   recora: {
@@ -33,8 +33,8 @@ const projectDetails: Record<string, { cover: string; flow: string; architecture
   },
 };
 
-function ProjectCard({ project, hasVideos, onArchitecture, onVideos }: {
-  project: Profile["projects"][number]; hasVideos: boolean; onArchitecture: () => void; onVideos: () => void;
+function ProjectCard({ project, videos, onArchitecture }: {
+  project: Profile["projects"][number]; videos: string[]; onArchitecture: () => void;
 }) {
   const [run, setRun] = useState(0);
   const [length, setLength] = useState(project.summary.length);
@@ -59,9 +59,9 @@ function ProjectCard({ project, hasVideos, onArchitecture, onVideos }: {
   return (
     <article className="panel project showcase-project" onMouseEnter={() => setRun((current) => current + 1)}
       onFocus={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setRun((current) => current + 1); }}>
-      <div className="project-cover" aria-hidden="true">
+      {videos.length ? <ProjectVideo key={videos.length} title={project.title} ids={videos} /> : <div className="project-cover" aria-hidden="true">
         {missingCover ? <Image size={31} /> : <img src={encodeURI(`/assets/projetos/${cover}.png`)} alt="" loading="lazy" onError={() => setMissingCover(true)} />}
-      </div>
+      </div>}
       <h4>{project.title}</h4>
       <p className="typewriter">
         <span className="typewriter-reserve" aria-hidden="true">{project.summary}</span>
@@ -76,25 +76,17 @@ function ProjectCard({ project, hasVideos, onArchitecture, onVideos }: {
         {links?.credly && <a href={links.credly} target="_blank" rel="noopener noreferrer">Credly <ArrowUpRight size={15} /></a>}
         {details?.architecture ? <a href={details.architecture}><Network size={15} /> Arquitetura</a>
           : details && <button type="button" className="feature-link" onClick={onArchitecture}><Network size={15} /> Arquitetura</button>}
-        {hasVideos ? <button type="button" className="feature-link" onClick={onVideos}><Video size={15} /> Ver vídeos</button>
-          : project.id !== "recora" && <a href={`/arquitetura?video=${encodeURIComponent(project.id)}#videos`}><Video size={15} /> Vídeos</a>}
+        {!videos.length && project.id !== "recora" && <a href={`/arquitetura?video=${encodeURIComponent(project.id)}#videos`}><Video size={15} /> Vídeos</a>}
       </div>
     </article>
   );
 }
 
-export default function ProjectShowcase({ profile }: { profile: Profile }) {
+export default function ProjectShowcase({ profile, videos }: { profile: Profile; videos: VideoLibrary }) {
   const dialog = useRef<HTMLDialogElement>(null);
-  const [selected, setSelected] = useState<{ project: Profile["projects"][number]; view: "architecture" | "videos" } | null>(null);
-  const [library, setLibrary] = useState(readVideoLibrary);
-  useEffect(() => {
-    const update = () => setLibrary(readVideoLibrary());
-    window.addEventListener("storage", update);
-    window.addEventListener("pageshow", update);
-    return () => { window.removeEventListener("storage", update); window.removeEventListener("pageshow", update); };
-  }, []);
-  function show(project: Profile["projects"][number], view: "architecture" | "videos") {
-    setSelected({ project, view });
+  const [selected, setSelected] = useState<Profile["projects"][number] | null>(null);
+  function show(project: Profile["projects"][number]) {
+    setSelected(project);
     dialog.current?.showModal();
   }
   return (
@@ -104,14 +96,12 @@ export default function ProjectShowcase({ profile }: { profile: Profile }) {
         <h3 className="extended-subtitle">Projetos</h3>
         <div className="card-grid chapter-cards">
           {profile.projects.map((project) => <ProjectCard key={project.id} project={project}
-            hasVideos={videosForProject(library, project.id).length > 0}
-            onArchitecture={() => show(project, "architecture")} onVideos={() => show(project, "videos")} />)}
+            videos={videos[project.id] ?? []} onArchitecture={() => show(project)} />)}
         </div>
       </div>
       <dialog ref={dialog} className="showcase-dialog" aria-labelledby="project-architecture-title" onClose={() => setSelected(null)}>
-        <div className="dialog-heading"><h2 id="project-architecture-title">{selected?.project.title}</h2><button type="button" className="icon-button" aria-label="Fechar" onClick={() => dialog.current?.close()}><X size={20} /></button></div>
-        {selected?.view === "architecture" && <><div className="eyebrow"><Network size={16} /> Arquitetura</div><p>{projectDetails[selected.project.id]?.flow}</p></>}
-        {selected?.view === "videos" && <ProjectVideo title={selected.project.title} ids={videosForProject(library, selected.project.id)} />}
+        <div className="dialog-heading"><h2 id="project-architecture-title">{selected?.title}</h2><button type="button" className="icon-button" aria-label="Fechar" onClick={() => dialog.current?.close()}><X size={20} /></button></div>
+        {selected && <><div className="eyebrow"><Network size={16} /> Arquitetura</div><p>{projectDetails[selected.id]?.flow}</p></>}
       </dialog>
     </section>
   );

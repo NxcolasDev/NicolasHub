@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { Video } from "lucide-react";
+import type { VideoLibrary } from "../api";
 
 const projects = {
   "nicolas-hub": "Nicolas Hub",
@@ -11,7 +12,6 @@ const projects = {
   ia: "Uso de IA no dia a dia",
 };
 type VideoProject = keyof typeof projects;
-type Library = Partial<Record<VideoProject, string[]>>;
 const projectIds = Object.keys(projects) as VideoProject[];
 const storageKey = "nicolas-hub-project-videos";
 const videoIdPattern = /^[A-Za-z0-9_-]{11}$/;
@@ -20,7 +20,7 @@ function isProject(value: string | null): value is VideoProject {
   return value !== null && Object.hasOwn(projects, value);
 }
 
-export function readVideoLibrary(): Library {
+function readLocalVideos(): VideoLibrary {
   try {
     const raw: unknown = JSON.parse(localStorage.getItem(storageKey) ?? "{}");
     if (typeof raw !== "object" || raw === null) return {};
@@ -30,10 +30,6 @@ export function readVideoLibrary(): Library {
       return Array.isArray(value) ? [[id, value.filter((video) => typeof video === "string" && videoIdPattern.test(video))]] : [];
     }));
   } catch { return {}; }
-}
-
-export function videosForProject(library: Library, project: string) {
-  return isProject(project) ? library[project] ?? [] : [];
 }
 
 function extractVideoId(value: string): string | null {
@@ -62,51 +58,72 @@ export function ProjectVideo({ title, ids }: { title: string; ids: string[] }) {
     </select></label>}
     <iframe key={video} src={`https://www.youtube-nocookie.com/embed/${video}`} title={`Vídeo de ${title}`}
       loading="lazy" referrerPolicy="strict-origin-when-cross-origin" allow="encrypted-media; picture-in-picture" allowFullScreen />
+    <a className="feature-link" href={`https://www.youtube.com/watch?v=${video}`} target="_blank" rel="noreferrer">Abrir no YouTube</a>
   </div>;
 }
 
-export default function ArchitectureVideos({ admin }: { admin: boolean }) {
+export interface ArchitectureVideosProps {
+  library: VideoLibrary;
+  status: "loading" | "ready" | "error";
+  onPublish?: (project: string, id: string) => Promise<void>;
+  onRetry: () => void;
+}
+
+export default function ArchitectureVideos({ library, status, onPublish, onRetry }: ArchitectureVideosProps) {
   const [selected, setSelected] = useState<VideoProject>(() => {
     const project = new URLSearchParams(location.search).get("video");
     return isProject(project) ? project : "nicolas-hub";
   });
-  const [library, setLibrary] = useState(readVideoLibrary);
+  const [localVideos] = useState(readLocalVideos);
+  const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState("");
   const ids = library[selected] ?? [];
+  const unpublished = [...new Set(localVideos[selected] ?? [])].filter((id) => !ids.includes(id));
+
+  async function publish(videoIds: string[], onSuccess?: () => void) {
+    if (!onPublish || busy) return;
+    setBusy(true);
+    setFeedback("");
+    try {
+      for (const id of videoIds) await onPublish(selected, id);
+      setFeedback(`Vídeos de ${projects[selected]} atualizados no Portfólio e em Arquitetura.`);
+      onSuccess?.();
+    } catch (failure) {
+      setFeedback(failure instanceof Error ? failure.message : "Não foi possível publicar o vídeo.");
+    } finally { setBusy(false); }
+  }
 
   function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!admin) return;
     const form = event.currentTarget;
     const value = String(new FormData(form).get("video-url") ?? "").trim();
     const id = extractVideoId(value);
     if (!id) { setFeedback("Cole uma URL HTTPS válida de um vídeo do YouTube."); return; }
     if (ids.includes(id)) { setFeedback("Esse vídeo já está cadastrado no projeto."); return; }
-    const next = { ...library, [selected]: [...ids, id] };
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(next));
-      setLibrary(next);
-      setFeedback(`Vídeo salvo para ${projects[selected]} neste navegador.`);
-      form.reset();
-    } catch { setFeedback("O navegador não conseguiu salvar o vídeo."); }
+    void publish([id], () => form.reset());
   }
 
   return <section id="videos" className="page-section panel architecture-videos" aria-labelledby="video-heading">
     <div className="section-heading"><Video size={21} /><h2 id="video-heading">Vídeos de arquitetura e projetos</h2></div>
     <div className="video-filters" role="group" aria-label="Filtrar vídeos por projeto">
-      {projectIds.map((id) => <button type="button" key={id} className="button secondary small" aria-pressed={selected === id}
+      {projectIds.map((id) => <button type="button" key={id} className="button secondary small" aria-pressed={selected === id} disabled={busy}
         onClick={() => { setSelected(id); setFeedback(""); }}>{projects[id]}</button>)}
     </div>
+    {status === "loading" && <p role="status" className="muted">Carregando vídeos…</p>}
+    {status === "error" && <div className="actions"><p className="muted">Não foi possível carregar os vídeos.</p>
+      <button type="button" className="button secondary small" onClick={onRetry}>Tentar novamente</button></div>}
     {ids.length > 0 ? <ProjectVideo key={`${selected}:${ids.length}`} title={projects[selected]} ids={ids} />
-      : <p className="muted">Nenhum vídeo disponível para {projects[selected]}.</p>}
-    {admin && <details className="video-form">
+      : status === "ready" && <p className="muted">Nenhum vídeo disponível para {projects[selected]}.</p>}
+    {onPublish && <details className="video-form">
       <summary>Cadastrar vídeo em {projects[selected]}</summary>
       <form onSubmit={save}>
         <label htmlFor="video-url">URL do vídeo no YouTube</label>
         <input id="video-url" name="video-url" type="url" maxLength={1000} placeholder="https://youtu.be/…" required />
-        <button type="submit" className="button primary small">Salvar vídeo</button>
+        <button type="submit" className="button primary small" disabled={busy || status !== "ready"}>{busy ? "Publicando…" : "Publicar vídeo"}</button>
       </form>
-      <p className="muted">Os vídeos cadastrados ficam neste navegador.</p>
+      <p className="muted">O vídeo ficará visível para visitantes no Portfólio e em Arquitetura.</p>
+      {unpublished.length > 0 && <button type="button" className="button secondary small" disabled={busy || status !== "ready"}
+        onClick={() => void publish(unpublished)}>Publicar vídeos salvos neste navegador ({unpublished.length})</button>}
     </details>}
     {feedback && <p role="status">{feedback}</p>}
   </section>;

@@ -62,31 +62,45 @@ def create_access_token(subject: str, *, admin: bool = False) -> str:
     return jwt.encode(claims, _jwt_secret(), algorithm=ALGORITHM)
 
 
-def require_admin(request: Request) -> None:
+def _has_admin_key(request: Request) -> bool:
     secret = get_settings().admin_secret_key
-    if secret is not None:
-        supplied = request.headers.get("X-Admin-Key", "")
-        if supplied and hmac.compare_digest(
-            supplied.encode(), secret.get_secret_value().encode()
-        ):
-            return
-        scheme, _, token = request.headers.get("Authorization", "").partition(" ")
-        if scheme.lower() == "bearer":
-            try:
-                payload = jwt.decode(
-                    token,
-                    _jwt_secret(),
-                    algorithms=[ALGORITHM],
-                    options={"require_exp": True, "require_sub": True},
-                )
-                marker = payload.get("admin")
-                if isinstance(marker, str) and hmac.compare_digest(
-                    marker.encode(), (_admin_marker() or "").encode()
-                ):
-                    return
-            except JWTError:
-                pass
+    supplied = request.headers.get("X-Admin-Key", "")
+    return (
+        secret is not None
+        and bool(supplied)
+        and hmac.compare_digest(supplied.encode(), secret.get_secret_value().encode())
+    )
+
+
+def require_admin_key(request: Request) -> None:
+    if not _has_admin_key(request):
+        raise _unauthorized()
+
+
+def admin_session_expiration(request: Request) -> int:
+    expected = _admin_marker()
+    scheme, _, token = request.headers.get("Authorization", "").partition(" ")
+    if expected is not None and scheme.lower() == "bearer":
+        try:
+            payload = jwt.decode(
+                token,
+                _jwt_secret(),
+                algorithms=[ALGORITHM],
+                options={"require_exp": True, "require_sub": True},
+            )
+            marker = payload.get("admin")
+            if isinstance(marker, str) and hmac.compare_digest(
+                marker.encode(), expected.encode()
+            ):
+                return int(payload["exp"])
+        except (JWTError, ValueError, TypeError, OverflowError):
+            pass
     raise _unauthorized()
+
+
+def require_admin(request: Request) -> None:
+    if not _has_admin_key(request):
+        admin_session_expiration(request)
 
 
 def require_admin_write(request: Request) -> None:

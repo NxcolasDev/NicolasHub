@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 PUBLIC_VALIDATION_FIELDS = frozenset("""
     body query path header email username password task scores window_size logs severity
     error_code prompt topic notes count description company_id message created_after
-    created_before limit offset
+    created_before limit offset project video_id
     """.split())
 
 app = FastAPI(

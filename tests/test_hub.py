@@ -1,3 +1,6 @@
+from datetime import datetime, timezone
+from secrets import token_hex
+
 from fastapi.testclient import TestClient
 
 from app import limits
@@ -90,9 +93,9 @@ def test_write_access_requires_admin_key_or_signed_admin_session(
     )
     legacy = {"Authorization": f"Bearer {create_access_token('1')}"}
     assert client.post(endpoint, json=event, headers=legacy).status_code == 401
-    assert client.get("/api/v1/auth/session", headers=administrator).json() == {
-        "admin": True
-    }
+    session = client.get("/api/v1/auth/session", headers=administrator)
+    assert session.json()["admin"] is True
+    assert session.json()["expires_at"] > datetime.now(timezone.utc).timestamp()
     response = client.post(endpoint, json=event, headers=administrator)
     assert response.status_code == 200
     assert response.json()["status"] == "SIMULATED_CLOUD_EVENT"
@@ -103,6 +106,63 @@ def test_write_access_requires_admin_key_or_signed_admin_session(
     monkeypatch.setattr(get_settings(), "admin_secret_key", None)
     assert client.get("/api/v1/auth/session", headers=administrator).status_code == 401
     assert client.post(endpoint, json=event, headers=administrator).status_code == 401
+
+
+def test_admin_login_rejects_wrong_key_even_with_valid_session(
+    client: TestClient,
+) -> None:
+    administrator = _login(client)
+    credentials = {
+        "username": "hub-tester@example.com",
+        "password": "local-test-password",
+    }
+    wrong_key = {"X-Admin-Key": token_hex(16)}
+    assert (
+        client.post(
+            "/api/v1/auth/login", data=credentials, headers=wrong_key
+        ).status_code
+        == 401
+    )
+    assert (
+        client.post(
+            "/api/v1/auth/login",
+            data=credentials,
+            headers={**administrator, **wrong_key},
+        ).status_code
+        == 401
+    )
+    assert client.get("/api/v1/auth/session").status_code == 401
+
+
+def test_project_videos_require_admin_session_and_are_public(
+    client: TestClient,
+) -> None:
+    administrator = _login(client)
+    path = "/api/v1/hub/project-videos"
+    video = {"project": "nicolas-hub", "video_id": "aBcd123_-EF"}
+    assert (
+        client.post(path, json=video).status_code == 401
+    )  # Key alone is insufficient.
+    client.headers.pop("X-Admin-Key")
+    assert client.get(path).json() == {}
+    assert client.post(path, json=video).status_code == 401
+    assert (
+        client.post(
+            path,
+            json={**video, "video_id": "https://invalid.example"},
+            headers=administrator,
+        ).status_code
+        == 422
+    )
+    assert (
+        client.post(
+            path, json={**video, "project": "unknown"}, headers=administrator
+        ).status_code
+        == 422
+    )
+    for _ in range(2):
+        assert client.post(path, json=video, headers=administrator).json() == video
+    assert client.get(path).json() == {"nicolas-hub": [video["video_id"]]}
 
 
 def test_login_quota_returns_retry_after(client: TestClient, monkeypatch) -> None:
