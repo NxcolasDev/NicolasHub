@@ -187,6 +187,21 @@ h3 { font-size: 1.06rem; font-weight: 700; line-height: 1.4; }
 .event-group .asset-grid { margin-top: 9px; }
 .certificate-provider { display: flex; gap: 12px; align-items: center; }
 .certificate-provider img { width: 68px; height: 48px; flex: none; object-fit: contain; background: #fff; padding: 5px; }
+.verified-credential {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid #3b4f25;
+  background: #11170d;
+  box-shadow: 3px 3px #a3e63520;
+}
+.verified-credential:hover { border-color: var(--accent); }
+.verified-credential img { flex: none; object-fit: contain; }
+.verified-credential-copy { display: grid; gap: 3px; }
+.verified-credential-copy small { color: var(--accent); font-family: var(--mono); }
+.verified-credential-link { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); font-size: .82rem; }
+.hero-copy .verified-credential { width: fit-content; max-width: 100%; margin-top: 16px; }
 .profile-retry { padding-block: 18px; }
 
 .main-content { min-height: calc(100vh - 130px); padding-block: 34px 65px; }

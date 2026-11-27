@@ -19,6 +19,15 @@ export interface AssistantResponse {
 
 const apiBase = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
 
+export interface ProfileCredential {
+  id: string;
+  title: string;
+  status: string;
+  verification_url?: string;
+  badge_path?: string;
+  learning?: string;
+}
+
 export interface Profile {
   name: string;
   headline: string;
@@ -28,7 +37,7 @@ export interface Profile {
   experience: { title: string; organization: string; period: string; details: string[] }[];
   skills: string[];
   languages: { name: string; level: string }[];
-  credentials: { id: string; title: string; status: string }[];
+  credentials: ProfileCredential[];
   projects: { id: string; title: string; summary: string; stack: string[] }[];
   events: { name: string; summary: string }[];
 }

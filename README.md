@@ -48,7 +48,9 @@ Sou **Nicolas de Jesus Silva**, estudante de Análise e Desenvolvimento de Siste
 
 <img src="docs/midias/Screenshot%202026-11-19%20121658.png" alt="Página inicial do Nicolas Hub" width="100%" />
 
-Projetos com capas e vídeos, certificações, idiomas, eventos e roadmap de 2027.
+Projetos com capas e vídeos, certificações, idiomas, eventos e roadmap de 2027. A certificação **AWS Certified Cloud Practitioner (CLF-C02)** está concluída e aparece com a badge oficial e verificação no Credly na página inicial e na seção Certificados. Os dados da credencial ficam no [perfil público](backend/app/data/profile.json).
+
+O roadmap mantém como próximas metas a certificação Google Cloud Associate Cloud Engineer e os exames IELTS e DELF.
 
 ### RECORA — TCC
 
