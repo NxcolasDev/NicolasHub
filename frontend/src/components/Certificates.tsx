@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { ArrowUpRight, Award, Plus, X } from "lucide-react";
-import type { Profile } from "../api";
+import type { Profile, ProfileCredential } from "../api";
 import assets from "../data/assets.json";
 import { importantImage, skins } from "../data/sprites";
 import { professionalLinks, referenceLinks } from "../config/profileLinks";
@@ -15,7 +15,6 @@ const providerLearning: Record<string, string> = {
   "aws-essentials": "Visão geral de computação, armazenamento, redes, segurança e precificação na AWS.",
   "gcp-skills": "Prática de redes, balanceamento de carga, desenvolvimento de aplicações e preparação de dados para APIs de ML.",
   "gcp-foundations": "Trilha em andamento sobre infraestrutura, aplicações, redes e serviços de dados no Google Cloud.",
-  "aws-clf": "Preparação para o exame com foco em conceitos da nuvem, segurança, serviços principais e custos.",
 };
 const assetLearning: Record<string, string> = {
   "Comunicação Empresarial": "Organização de mensagens e adaptação da comunicação ao público no ambiente profissional.",
@@ -47,6 +46,24 @@ function readCertificates(): Certificate[] {
   } catch {
     return [];
   }
+}
+
+export function VerifiedCredential({ credential, onPreview }: {
+  credential: ProfileCredential;
+  onPreview?: () => void;
+}) {
+  if (!credential.verification_url) return null;
+
+  return (
+    <a className="verified-credential" href={credential.verification_url} target="_blank" rel="noopener noreferrer" onPointerEnter={onPreview} onFocus={onPreview}>
+      {credential.badge_path && <img src={credential.badge_path} alt="" width={44} height={44} />}
+      <span className="verified-credential-copy">
+        <strong>{credential.title}</strong>
+        <small>{credential.status}</small>
+        <span className="verified-credential-link">Verificar no Credly <ArrowUpRight size={14} aria-hidden="true" /></span>
+      </span>
+    </a>
+  );
 }
 
 export default function Certificates({ profile, admin }: { profile: Profile | null; admin: boolean }) {
@@ -92,8 +109,10 @@ export default function Certificates({ profile, admin }: { profile: Profile | nu
           <div>
             <div className="card-grid chapter-cards">
               {profile?.credentials.map((entry) => {
+                const preview = () => setSelection({ title: entry.title, learning: entry.learning ?? providerLearning[entry.id] ?? entry.status });
+                if (entry.verification_url) return <VerifiedCredential key={entry.id} credential={entry} onPreview={preview} />;
+
                 const provider = entry.id.startsWith("aws");
-                const preview = () => setSelection({ title: entry.title, learning: providerLearning[entry.id] ?? entry.status });
                 return <button type="button" className="panel certificate-provider" key={entry.id} onPointerEnter={preview} onFocus={preview} onClick={preview} aria-controls="certificate-preview">
                   <img src={importantImage(provider ? "aws.png" : "gcp.png")} alt="" loading="lazy" />
                   <span><strong>{entry.title}</strong><small className="muted">{entry.status}</small></span>

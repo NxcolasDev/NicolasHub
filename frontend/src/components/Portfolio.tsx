@@ -6,7 +6,7 @@ import assets from "../data/assets.json";
 import { importantImage, skins } from "../data/sprites";
 import { AvatarStage } from "./PixelAvatar";
 import { professionalLinks, publicProfessionalLinks, referenceLinks } from "../config/profileLinks";
-import Certificates from "./Certificates";
+import Certificates, { VerifiedCredential } from "./Certificates";
 import ProjectShowcase from "./ProjectShowcase";
 import ProfessionalIcon from "./ProfessionalIcon";
 import LanguageSection from "./LanguageSection";
@@ -210,6 +210,7 @@ function ExtendedLook({ profile }: { profile: Profile | null }) {
 
 export default function Portfolio({ profile, admin, videos, covers }: { profile: Profile | null; admin: boolean; videos: VideoLibrary; covers: ProjectCovers }) {
   const recora = profile?.projects.find((project) => project.id === "recora");
+  const cloudPractitioner = profile?.credentials.find((entry) => entry.id === "aws-clf");
   return (
     <>
       <section className="hub-hero" aria-labelledby="hero-title">
@@ -224,6 +225,7 @@ export default function Portfolio({ profile, admin, videos, covers }: { profile:
               <a className="button primary" href="/arquitetura">Explorar arquitetura <ArrowRight size={17} /></a>
               <a className="button secondary" href="/academia#terminal"><Terminal size={17} /> Abrir Coding Gym</a>
             </div>
+            {cloudPractitioner && <VerifiedCredential credential={cloudPractitioner} />}
             <div className="profile-links">{publicProfessionalLinks.map((link) => (
               <a key={link.label} href={link.url} target="_blank" rel="noopener noreferrer"><ProfessionalIcon label={link.label} /> {link.label} <ArrowUpRight size={15} /></a>
             ))}</div>
@@ -290,13 +292,17 @@ export default function Portfolio({ profile, admin, videos, covers }: { profile:
         <h2>Planos para 2027</h2>
         <ol className="future-roadmap">
           <li><strong>Primeira oportunidade efetiva</strong><p>Conquistar uma vaga em Cloud, DevOps ou Engenharia de Backend.</p></li>
-          <li><strong>Certificações e idiomas</strong><p>Obter AWS Certified Cloud Practitioner e Google Cloud Associate Cloud Engineer. Buscar IELTS em inglês e DELF em francês.</p></li>
+          <li>
+            <strong>Certificações e idiomas</strong>
+            {cloudPractitioner && <p>{cloudPractitioner.title} · {cloudPractitioner.status}</p>}
+            <p>Próximas metas: obter Google Cloud Associate Cloud Engineer, buscar IELTS em inglês e DELF em francês.</p>
+          </li>
           <li><strong>Carreira internacional</strong><p>Expandir o portfólio com projetos de arquitetura distribuída e IA e trabalhar com equipes internacionais.</p></li>
         </ol>
         <details className="roadmap-detail">
           <summary className="button secondary">Ver cronograma detalhado de 2027</summary>
           <ol className="future-roadmap roadmap-quarters">
-            <li><strong>1º trimestre · janeiro a março</strong><p>Fazer a prova AWS Cloud Practitioner e atualizar currículo, LinkedIn e portfólio para candidaturas em Cloud, DevOps e Backend.</p></li>
+            <li><strong>1º trimestre · janeiro a março</strong><p>Atualizar currículo, LinkedIn e portfólio para candidaturas em Cloud, DevOps e Backend.</p></li>
             <li><strong>2º trimestre · abril a junho</strong><p>Preparar e fazer a prova Google Cloud Associate Cloud Engineer, praticar com um projeto multicloud e fazer um simulado IELTS.</p></li>
             <li><strong>3º trimestre · julho a setembro</strong><p>Fazer a prova IELTS, intensificar a preparação para o DELF e publicar um projeto de arquitetura distribuída com IA.</p></li>
             <li><strong>4º trimestre · outubro a dezembro</strong><p>Fazer a prova DELF, consolidar o portfólio técnico e dar continuidade à busca pelo primeiro emprego tech e por equipes internacionais.</p></li>

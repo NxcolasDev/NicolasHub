@@ -122,7 +122,10 @@
     {
       "id": "aws-clf",
       "title": "AWS Certified Cloud Practitioner (CLF-C02)",
-      "status": "Em preparação"
+      "status": "Concluída · AWS Certified",
+      "verification_url": "https://www.credly.com/badges/a2651e0e-7c97-488d-80b7-0b5316a39815/public_url",
+      "badge_path": "/assets/badges/aws-certified-cloud-practitioner.png",
+      "learning": "Validei conhecimentos em conceitos de nuvem, segurança, principais serviços da AWS e modelos de cobrança."
     }
   ],
   "projects": [
